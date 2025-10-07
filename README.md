@@ -136,7 +136,7 @@ OPENAI_API_KEY=放入vercel中的sk-your-openai-api-key-here
 ```bash
 FIREBASE_PRIVATE_KEY=/home/pi的使用者名稱/wakeupmap-pi/raspberrypi-dsi/private_key.pem
 USER_NAME=yutingpi  #改名稱，例如：yutingpi, alice, bob 等，將會是甦醒地圖的使用者代號。
-WEBSITE_URL=https://wakeupmap-pi.vercel.app/pi.html #換成自己的vercel deploy link
+WEBSITE_URL=https://yuhsiang.vercel.app/pi.html #換成自己的vercel deploy link
 
 # 保存並退出 (Ctrl+X, Y, Enter)
 ```
