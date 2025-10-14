@@ -572,7 +572,7 @@ function dropSingleCoinRandom() {
     const coin = document.createElement('div');
     coin.className = 'stacked-coin';
     
-    const coinSize = 80; // 硬幣大小
+    const coinSize = 64; // 硬幣大小（像素風格）
     const containerWidth = container.offsetWidth;
     
     // 隨機水平位置（避免超出邊界）
@@ -625,9 +625,9 @@ function calculateCoinPosition(x, size) {
         const distance = Math.abs(x - pos.x);
         
         // 如果水平距離小於硬幣寬度，表示可能會堆疊
-        if (distance < size * 0.8) {
-            // 計算堆疊高度
-            const stackHeight = pos.y + size * 0.7; // 70% 重疊
+        if (distance < size * 0.7) {
+            // 計算堆疊高度（像素風格：較小的重疊）
+            const stackHeight = pos.y + size * 0.35; // 35% 重疊
             if (stackHeight > maxY) {
                 maxY = stackHeight;
             }
@@ -643,7 +643,7 @@ function initCoinStack(totalCoins) {
     container.innerHTML = '';
     coinPositions = [];
     
-    const coinSize = 80;
+    const coinSize = 64; // 像素風格硬幣大小
     const containerWidth = container.offsetWidth || 800;
     
     // 逐個生成硬幣（模擬隨機散落）
