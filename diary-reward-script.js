@@ -29,12 +29,17 @@ const AppState = {
     
     // 更新 UI 顯示
     updateUI() {
-        // 更新總獎勵
-        document.getElementById('totalRewards').textContent = this.totalRewards;
+        // 更新總獎勵（主畫面數字）
+        document.getElementById('coinCountNumber').textContent = this.totalRewards;
         
-        // 更新今日獎勵
-        document.getElementById('todayReward').textContent = 
-            this.todayReward > 0 ? `+${this.todayReward}` : '+0';
+        // 更新錢幣堆疊視覺效果
+        updateCoinStack(this.totalRewards);
+        
+        // 更新今日獎勵（設定面板）
+        const todayRewardEl = document.getElementById('todayReward');
+        if (todayRewardEl) {
+            todayRewardEl.textContent = this.todayReward > 0 ? `+${this.todayReward}` : '+0';
+        }
         
         // 更新進度條
         const progress = Math.min((this.totalRewards / this.targetReward) * 100, 100);
@@ -90,6 +95,10 @@ function updateDateDisplay() {
 
 // ===== 事件監聽器設定 =====
 function setupEventListeners() {
+    // 設定按鈕開關
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+    
     // 輸入模式切換
     document.getElementById('textModeBtn').addEventListener('click', () => switchMode('text'));
     document.getElementById('voiceModeBtn').addEventListener('click', () => switchMode('voice'));
@@ -105,7 +114,7 @@ function setupEventListeners() {
     document.getElementById('submitBtn').addEventListener('click', submitDiary);
     
     // 模擬投幣按鈕
-    document.getElementById('triggerCoinBtn').addEventListener('click', triggerCoinAnimation);
+    document.getElementById('triggerCoinBtn').addEventListener('click', () => triggerCoinAnimation(10));
     
     // 列印按鈕
     document.getElementById('printBtn').addEventListener('click', showPrintPreview);
@@ -120,6 +129,24 @@ function setupEventListeners() {
     });
     
     document.getElementById('confirmPrintBtn').addEventListener('click', confirmPrint);
+    
+    // 點擊設定面板外側關閉
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('settingsPanel');
+        const btn = document.getElementById('settingsBtn');
+        if (!panel.contains(e.target) && !btn.contains(e.target) && !panel.classList.contains('hidden')) {
+            closeSettings();
+        }
+    });
+}
+
+// ===== 設定面板開關 =====
+function openSettings() {
+    document.getElementById('settingsPanel').classList.remove('hidden');
+}
+
+function closeSettings() {
+    document.getElementById('settingsPanel').classList.add('hidden');
 }
 
 // ===== 輸入模式切換 =====
@@ -329,16 +356,6 @@ function hideAnalysisStatus() {
     document.getElementById('submitBtn').disabled = false;
 }
 
-function showSuccessModal(reward) {
-    document.getElementById('modalReward').textContent = reward;
-    document.getElementById('successModal').classList.remove('hidden');
-    
-    // 延遲觸發硬幣動畫
-    setTimeout(() => {
-        triggerCoinAnimation(reward);
-    }, 500);
-}
-
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
@@ -530,6 +547,69 @@ function fillTestData() {
     const testContent = '今天天氣很好，和朋友去了公園散步。看到很多小孩在玩耍，心情變得很愉快。晚上做了一頓美味的晚餐，感覺很滿足。';
     document.getElementById('diaryInput').value = testContent;
     updateCharCount();
+}
+
+// ===== 錢幣堆疊視覺效果 =====
+function updateCoinStack(totalCoins) {
+    const container = document.getElementById('coinStackContainer');
+    
+    // 顯示最多 20 個錢幣堆疊
+    const maxCoins = Math.min(totalCoins, 20);
+    
+    // 清空現有錢幣
+    container.innerHTML = '';
+    
+    // 創建錢幣堆疊
+    for (let i = 0; i < maxCoins; i++) {
+        const coin = document.createElement('div');
+        coin.className = 'stacked-coin';
+        coin.textContent = '🪙';
+        
+        // 計算錢幣位置（堆疊效果）
+        const stackHeight = i * 8; // 每個錢幣向上堆 8px
+        const randomOffset = (Math.random() - 0.5) * 10; // 隨機偏移
+        
+        coin.style.bottom = `${stackHeight}px`;
+        coin.style.left = `calc(50% + ${randomOffset}px)`;
+        coin.style.animationDelay = `${i * 0.05}s`;
+        
+        // 根據高度調整大小和透明度
+        const scale = 1 - (i * 0.01);
+        coin.style.transform = `translateX(-50%) scale(${scale})`;
+        coin.style.opacity = 1 - (i * 0.02);
+        
+        container.appendChild(coin);
+    }
+}
+
+// ===== 今日獲得 Toast 提示 =====
+function showTodayGainToast(amount) {
+    const toast = document.getElementById('todayGainToast');
+    const amountEl = document.getElementById('toastAmount');
+    
+    amountEl.textContent = amount;
+    toast.classList.remove('hidden');
+    
+    // 3 秒後自動隱藏
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// ===== 修改成功提示函式 =====
+function showSuccessModal(reward) {
+    // 不顯示彈窗，改用 Toast 提示
+    showTodayGainToast(reward);
+    
+    // 延遲觸發硬幣動畫
+    setTimeout(() => {
+        triggerCoinAnimation(reward);
+    }, 500);
+    
+    // 自動關閉設定面板
+    setTimeout(() => {
+        closeSettings();
+    }, 1000);
 }
 
 // 在開發環境中暴露測試函式

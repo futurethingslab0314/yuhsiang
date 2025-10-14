@@ -15,78 +15,103 @@
 <body>
     <!-- 主容器 -->
     <div class="container">
-        <!-- 頂部標題欄 -->
-        <header class="header">
-            <h1 class="main-title">每日日記獎勵系統</h1>
-            <div class="date-display" id="dateDisplay"></div>
-        </header>
+        <!-- 極簡主畫面：只顯示錢幣堆疊 -->
+        <div class="coin-stack-view">
+            <!-- 背景模糊效果層 -->
+            <div class="blur-background"></div>
+            
+            <!-- 錢幣堆疊容器 -->
+            <div class="coin-stack-container" id="coinStackContainer">
+                <!-- 錢幣會動態生成在這裡 -->
+            </div>
+            
+            <!-- 累積數字顯示 -->
+            <div class="coin-count-display">
+                <div class="coin-count-number" id="coinCountNumber">0</div>
+                <div class="coin-count-label">枚硬幣</div>
+            </div>
+            
+            <!-- 今日獲得提示（淡入淡出） -->
+            <div class="today-gain-toast hidden" id="todayGainToast">
+                <span class="toast-text">今日 +<span id="toastAmount">0</span></span>
+            </div>
+        </div>
 
-        <!-- 主要內容區 -->
-        <main class="main-content">
-            <!-- 左側：輸入區域 -->
-            <section class="input-section">
-                <div class="input-card">
-                    <h2 class="section-title">今日日記</h2>
-                    
-                    <!-- 輸入模式切換 -->
+        <!-- 設定按鈕（浮動） -->
+        <button class="floating-settings-btn" id="settingsBtn" title="開啟設定">
+            ⚙️
+        </button>
+
+        <!-- 設定面板（側邊滑出） -->
+        <div class="settings-panel hidden" id="settingsPanel">
+            <div class="settings-header">
+                <h2 class="settings-title">設定與輸入</h2>
+                <button class="close-settings-btn" id="closeSettingsBtn">✕</button>
+            </div>
+            
+            <div class="settings-content">
+                <!-- 日期顯示 -->
+                <div class="settings-section">
+                    <div class="date-display" id="dateDisplay"></div>
+                </div>
+
+                <!-- 輸入模式切換 -->
+                <div class="settings-section">
+                    <h3 class="section-subtitle">輸入模式</h3>
                     <div class="input-mode-toggle">
                         <button class="mode-btn active" data-mode="text" id="textModeBtn">
-                            📝 文字輸入
+                            📝 文字
                         </button>
                         <button class="mode-btn" data-mode="voice" id="voiceModeBtn">
-                            🎤 語音輸入
+                            🎤 語音
                         </button>
                     </div>
+                </div>
 
-                    <!-- 文字輸入區 -->
-                    <div class="text-input-area" id="textInputArea">
-                        <textarea 
-                            id="diaryInput" 
-                            class="diary-textarea" 
-                            placeholder="寫下你今天的心情、想法或經歷...&#10;&#10;範例：&#10;今天天氣很好，和朋友去了公園散步。看到很多小孩在玩耍，心情變得很愉快。晚上做了一頓美味的晚餐，感覺很滿足。"
-                            maxlength="500"></textarea>
-                        <div class="char-counter">
-                            <span id="charCount">0</span> / 500
-                        </div>
+                <!-- 文字輸入區 -->
+                <div class="settings-section text-input-area" id="textInputArea">
+                    <h3 class="section-subtitle">今日日記</h3>
+                    <textarea 
+                        id="diaryInput" 
+                        class="diary-textarea" 
+                        placeholder="寫下你今天的心情..."
+                        maxlength="500"></textarea>
+                    <div class="char-counter">
+                        <span id="charCount">0</span> / 500
                     </div>
+                </div>
 
-                    <!-- 語音輸入區 -->
-                    <div class="voice-input-area hidden" id="voiceInputArea">
-                        <button class="voice-record-btn" id="voiceRecordBtn">
-                            <span class="voice-icon">🎤</span>
-                            <span class="voice-text">點擊開始錄音</span>
-                        </button>
-                        <div class="recording-indicator hidden" id="recordingIndicator">
-                            <span class="pulse-dot"></span>
-                            <span>錄音中...</span>
-                        </div>
-                        <div class="voice-transcript" id="voiceTranscript"></div>
+                <!-- 語音輸入區 -->
+                <div class="settings-section voice-input-area hidden" id="voiceInputArea">
+                    <h3 class="section-subtitle">語音錄製</h3>
+                    <button class="voice-record-btn compact" id="voiceRecordBtn">
+                        <span class="voice-icon">🎤</span>
+                        <span class="voice-text">開始錄音</span>
+                    </button>
+                    <div class="recording-indicator hidden" id="recordingIndicator">
+                        <span class="pulse-dot"></span>
+                        <span>錄音中...</span>
                     </div>
+                    <div class="voice-transcript" id="voiceTranscript"></div>
+                </div>
 
-                    <!-- 提交按鈕 -->
+                <!-- 提交按鈕 -->
+                <div class="settings-section">
                     <button class="submit-btn" id="submitBtn">
                         <span class="btn-icon">✨</span>
                         提交日記
                     </button>
-
-                    <!-- 分析狀態 -->
-                    <div class="analysis-status hidden" id="analysisStatus">
-                        <div class="loading-spinner"></div>
-                        <p>AI 正在分析你的日記...</p>
-                    </div>
                 </div>
-            </section>
 
-            <!-- 右側：獎勵顯示區 -->
-            <section class="reward-section">
-                <!-- 累積獎勵顯示 -->
-                <div class="reward-card">
-                    <h2 class="section-title">獎勵累積</h2>
-                    <div class="total-rewards">
-                        <div class="coin-icon-large">🪙</div>
-                        <div class="reward-amount" id="totalRewards">0</div>
-                        <div class="reward-label">累積硬幣</div>
-                    </div>
+                <!-- 分析狀態 -->
+                <div class="analysis-status hidden" id="analysisStatus">
+                    <div class="loading-spinner"></div>
+                    <p>AI 正在分析...</p>
+                </div>
+
+                <!-- 進度資訊 -->
+                <div class="settings-section">
+                    <h3 class="section-subtitle">進度追蹤</h3>
                     <div class="progress-bar-container">
                         <div class="progress-bar" id="progressBar"></div>
                     </div>
@@ -94,36 +119,38 @@
                         <span id="currentProgress">0</span> / <span id="targetProgress">100</span>
                         <span class="progress-label">目標達成</span>
                     </div>
-                </div>
-
-                <!-- 今日獎勵顯示 -->
-                <div class="today-reward-card">
-                    <h3 class="card-subtitle">今日獲得</h3>
-                    <div class="today-reward-amount" id="todayReward">+0</div>
-                    <div class="reward-description" id="rewardDescription">
-                        提交日記後即可獲得獎勵
+                    <div class="today-reward-info">
+                        <span>今日獲得: </span>
+                        <span class="today-reward-amount" id="todayReward">+0</span>
                     </div>
                 </div>
 
-                <!-- 列印提示卡片 -->
-                <div class="print-card hidden" id="printCard">
-                    <div class="print-icon">🎟️</div>
-                    <h3 class="print-title">紙籤已準備好！</h3>
-                    <p class="print-message">恭喜達成目標！點擊下方按鈕開始列印你的專屬紙籤</p>
-                    <button class="print-btn" id="printBtn">
-                        🖨️ 開始列印
-                    </button>
+                <!-- 列印提示 -->
+                <div class="settings-section print-card hidden" id="printCard">
+                    <div class="print-compact">
+                        <div class="print-icon">🎟️</div>
+                        <div class="print-info">
+                            <h4 class="print-title">紙籤已準備好！</h4>
+                            <p class="print-message">恭喜達成目標</p>
+                        </div>
+                        <button class="print-btn" id="printBtn">列印</button>
+                    </div>
                 </div>
-            </section>
-        </main>
 
-        <!-- 硬幣動畫容器 -->
+                <!-- 測試功能 -->
+                <div class="settings-section">
+                    <h3 class="section-subtitle">測試功能</h3>
+                    <div class="test-buttons">
+                        <button class="test-btn" id="triggerCoinBtn">💰 投幣動畫</button>
+                        <button class="test-btn" onclick="testFillData()">📝 填充測試</button>
+                        <button class="test-btn" onclick="testShowPrint()">🎟️ 達標測試</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 硬幣掉落動畫容器 -->
         <div class="coins-container" id="coinsContainer"></div>
-
-        <!-- 模擬投幣按鈕（模擬紅外線感應） -->
-        <button class="hidden-trigger-btn" id="triggerCoinBtn" title="模擬投幣動作（開發測試用）">
-            💰 測試投幣
-        </button>
     </div>
 
     <!-- 成功提示彈窗 -->
