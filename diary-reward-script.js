@@ -40,10 +40,7 @@ const AppState = {
     
     // 更新 UI 顯示
     updateUI() {
-        // 更新總獎勵（主畫面數字）
-        document.getElementById('coinCountNumber').textContent = this.totalRewards;
-        
-        // 更新錢幣堆疊視覺效果
+        // 更新錢幣堆疊視覺效果（主畫面）
         updateCoinStack(this.totalRewards);
         
         // 更新今日獎勵（設定面板）
@@ -536,8 +533,9 @@ function fillTestData() {
     updateCharCount();
 }
 
-// ===== 錢幣堆疊視覺效果 =====
+// ===== 錢幣隨機散落堆疊效果 =====
 let currentCoinCount = 0;
+let coinPositions = []; // 記錄所有硬幣的位置
 
 function updateCoinStack(totalCoins) {
     const container = document.getElementById('coinStackContainer');
@@ -546,6 +544,7 @@ function updateCoinStack(totalCoins) {
     if (totalCoins < currentCoinCount) {
         container.innerHTML = '';
         currentCoinCount = 0;
+        coinPositions = [];
     }
     
     // 計算需要新增的硬幣數量
@@ -561,52 +560,112 @@ function updateCoinStack(totalCoins) {
             return;
         }
         
-        dropSingleCoin(currentCoinCount);
+        dropSingleCoinRandom();
         currentCoinCount++;
         addedCoins++;
-    }, 400); // 每 400ms 掉一個硬幣
+    }, 300); // 每 300ms 掉一個硬幣
 }
 
-// 掉落單個硬幣
-function dropSingleCoin(index) {
+// 隨機掉落單個硬幣並堆疊
+function dropSingleCoinRandom() {
     const container = document.getElementById('coinStackContainer');
     const coin = document.createElement('div');
     coin.className = 'stacked-coin';
     
-    // 計算堆疊高度
-    const coinHeight = 15; // 每個硬幣的堆疊高度
-    const stackHeight = index * coinHeight;
+    const coinSize = 80; // 硬幣大小
+    const containerWidth = container.offsetWidth;
     
-    // 設置最終位置
-    coin.style.bottom = `${stackHeight}px`;
+    // 隨機水平位置（避免超出邊界）
+    const minX = coinSize / 2;
+    const maxX = containerWidth - coinSize / 2;
+    const randomX = minX + Math.random() * (maxX - minX);
+    
+    // 隨機旋轉角度
+    const randomRotate = Math.random() * 720 - 360; // -360 to 360 度
+    
+    // 計算硬幣應該落在的高度（檢測與其他硬幣的碰撞）
+    const finalY = calculateCoinPosition(randomX, coinSize);
+    
+    // 設置硬幣樣式
+    coin.style.left = `${randomX}px`;
+    coin.style.bottom = `${finalY}px`;
+    coin.style.setProperty('--rotate-angle', `${randomRotate}deg`);
+    coin.style.animation = 'coin-drop-random 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    
+    // 記錄硬幣位置
+    coinPositions.push({
+        x: randomX,
+        y: finalY,
+        size: coinSize
+    });
     
     // 添加到容器
     container.appendChild(coin);
     
-    // 播放音效（如果有）
+    // 播放音效
     playCoinSound();
     
-    // 硬幣掉落完成後添加彈跳效果
+    // 硬幣落地後彈跳
     setTimeout(() => {
+        coin.style.animation = 'none';
         coin.classList.add('bounce');
         setTimeout(() => {
             coin.classList.remove('bounce');
-        }, 500);
+        }, 400);
     }, 800);
+}
+
+// 計算硬幣應該落在的位置（簡單的碰撞檢測）
+function calculateCoinPosition(x, size) {
+    const groundLevel = 0;
+    let maxY = groundLevel;
+    
+    // 檢查與已有硬幣的碰撞
+    for (let pos of coinPositions) {
+        const distance = Math.abs(x - pos.x);
+        
+        // 如果水平距離小於硬幣寬度，表示可能會堆疊
+        if (distance < size * 0.8) {
+            // 計算堆疊高度
+            const stackHeight = pos.y + size * 0.7; // 70% 重疊
+            if (stackHeight > maxY) {
+                maxY = stackHeight;
+            }
+        }
+    }
+    
+    return maxY;
 }
 
 // 初始化硬幣堆疊（無動畫，用於頁面載入）
 function initCoinStack(totalCoins) {
     const container = document.getElementById('coinStackContainer');
     container.innerHTML = '';
+    coinPositions = [];
     
-    const coinHeight = 15;
+    const coinSize = 80;
+    const containerWidth = container.offsetWidth || 800;
     
+    // 逐個生成硬幣（模擬隨機散落）
     for (let i = 0; i < totalCoins; i++) {
         const coin = document.createElement('div');
         coin.className = 'stacked-coin';
-        coin.style.bottom = `${i * coinHeight}px`;
-        coin.style.animation = 'none'; // 取消動畫
+        
+        const minX = coinSize / 2;
+        const maxX = containerWidth - coinSize / 2;
+        const randomX = minX + Math.random() * (maxX - minX);
+        const finalY = calculateCoinPosition(randomX, coinSize);
+        
+        coin.style.left = `${randomX}px`;
+        coin.style.bottom = `${finalY}px`;
+        coin.style.animation = 'none';
+        
+        coinPositions.push({
+            x: randomX,
+            y: finalY,
+            size: coinSize
+        });
+        
         container.appendChild(coin);
     }
 }
