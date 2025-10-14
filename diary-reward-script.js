@@ -14,7 +14,18 @@ const AppState = {
         if (saved) {
             const data = JSON.parse(saved);
             this.totalRewards = data.totalRewards || 0;
+            // 初始化時直接設定硬幣數量，不播放動畫
+            if (typeof currentCoinCount !== 'undefined') {
+                currentCoinCount = this.totalRewards;
+            }
             this.updateUI();
+            
+            // 初始渲染硬幣堆疊（無動畫）
+            setTimeout(() => {
+                if (typeof initCoinStack === 'function') {
+                    initCoinStack(this.totalRewards);
+                }
+            }, 100);
         }
     },
     
@@ -368,37 +379,13 @@ function clearInput() {
 }
 
 // ===== 硬幣掉落動畫 =====
+// 這個函式現在主要用於測試
 function triggerCoinAnimation(count = 10) {
-    const container = document.getElementById('coinsContainer');
-    const coinCount = Math.min(count, 20); // 限制最多 20 個硬幣
-    
-    // 播放音效（需要準備音效檔案）
-    playCoinSound();
-    
-    // 生成硬幣
-    for (let i = 0; i < coinCount; i++) {
-        setTimeout(() => {
-            createCoin(container);
-        }, i * 100); // 每個硬幣間隔 100ms
-    }
-}
-
-function createCoin(container) {
-    const coin = document.createElement('div');
-    coin.className = 'coin';
-    coin.textContent = '🪙';
-    
-    // 隨機水平位置
-    const randomX = Math.random() * window.innerWidth;
-    coin.style.left = randomX + 'px';
-    coin.style.top = '-50px';
-    
-    container.appendChild(coin);
-    
-    // 動畫結束後移除元素
-    setTimeout(() => {
-        coin.remove();
-    }, 2000);
+    // 更新硬幣堆疊（一次一個掉落）
+    AppState.totalRewards += count;
+    AppState.todayReward += count;
+    AppState.saveState();
+    AppState.updateUI();
 }
 
 // ===== 音效播放 =====
@@ -550,34 +537,76 @@ function fillTestData() {
 }
 
 // ===== 錢幣堆疊視覺效果 =====
+let currentCoinCount = 0;
+
 function updateCoinStack(totalCoins) {
     const container = document.getElementById('coinStackContainer');
     
-    // 顯示最多 20 個錢幣堆疊
-    const maxCoins = Math.min(totalCoins, 20);
+    // 如果新的硬幣數量少於當前數量，重新渲染
+    if (totalCoins < currentCoinCount) {
+        container.innerHTML = '';
+        currentCoinCount = 0;
+    }
     
-    // 清空現有錢幣
+    // 計算需要新增的硬幣數量
+    const coinsToAdd = totalCoins - currentCoinCount;
+    
+    if (coinsToAdd <= 0) return;
+    
+    // 一次掉落一個硬幣
+    let addedCoins = 0;
+    const dropInterval = setInterval(() => {
+        if (addedCoins >= coinsToAdd) {
+            clearInterval(dropInterval);
+            return;
+        }
+        
+        dropSingleCoin(currentCoinCount);
+        currentCoinCount++;
+        addedCoins++;
+    }, 400); // 每 400ms 掉一個硬幣
+}
+
+// 掉落單個硬幣
+function dropSingleCoin(index) {
+    const container = document.getElementById('coinStackContainer');
+    const coin = document.createElement('div');
+    coin.className = 'stacked-coin';
+    
+    // 計算堆疊高度
+    const coinHeight = 15; // 每個硬幣的堆疊高度
+    const stackHeight = index * coinHeight;
+    
+    // 設置最終位置
+    coin.style.bottom = `${stackHeight}px`;
+    
+    // 添加到容器
+    container.appendChild(coin);
+    
+    // 播放音效（如果有）
+    playCoinSound();
+    
+    // 硬幣掉落完成後添加彈跳效果
+    setTimeout(() => {
+        coin.classList.add('bounce');
+        setTimeout(() => {
+            coin.classList.remove('bounce');
+        }, 500);
+    }, 800);
+}
+
+// 初始化硬幣堆疊（無動畫，用於頁面載入）
+function initCoinStack(totalCoins) {
+    const container = document.getElementById('coinStackContainer');
     container.innerHTML = '';
     
-    // 創建錢幣堆疊
-    for (let i = 0; i < maxCoins; i++) {
+    const coinHeight = 15;
+    
+    for (let i = 0; i < totalCoins; i++) {
         const coin = document.createElement('div');
         coin.className = 'stacked-coin';
-        coin.textContent = '🪙';
-        
-        // 計算錢幣位置（堆疊效果）
-        const stackHeight = i * 8; // 每個錢幣向上堆 8px
-        const randomOffset = (Math.random() - 0.5) * 10; // 隨機偏移
-        
-        coin.style.bottom = `${stackHeight}px`;
-        coin.style.left = `calc(50% + ${randomOffset}px)`;
-        coin.style.animationDelay = `${i * 0.05}s`;
-        
-        // 根據高度調整大小和透明度
-        const scale = 1 - (i * 0.01);
-        coin.style.transform = `translateX(-50%) scale(${scale})`;
-        coin.style.opacity = 1 - (i * 0.02);
-        
+        coin.style.bottom = `${i * coinHeight}px`;
+        coin.style.animation = 'none'; // 取消動畫
         container.appendChild(coin);
     }
 }
@@ -601,15 +630,13 @@ function showSuccessModal(reward) {
     // 不顯示彈窗，改用 Toast 提示
     showTodayGainToast(reward);
     
-    // 延遲觸發硬幣動畫
-    setTimeout(() => {
-        triggerCoinAnimation(reward);
-    }, 500);
+    // 硬幣會自動透過 updateUI -> updateCoinStack 一個個掉落
+    // 不需要再手動觸發
     
-    // 自動關閉設定面板
+    // 延遲自動關閉設定面板（等待硬幣掉落開始）
     setTimeout(() => {
         closeSettings();
-    }, 1000);
+    }, 1500);
 }
 
 // 在開發環境中暴露測試函式
