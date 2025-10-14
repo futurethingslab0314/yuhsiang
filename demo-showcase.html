@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日日記獎勵系統 - 功能展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .main-btn {
+            display: block;
+            width: 300px;
+            margin: 30px auto;
+            padding: 20px 40px;
+            background: #4CAF50;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .main-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+
+        .feature-desc {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .demo-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .demo-section h2 {
+            font-size: 32px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .demo-item {
+            border: 2px solid #E0E0E0;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .demo-item h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .demo-item ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .demo-item li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .demo-item li:last-child {
+            border-bottom: none;
+        }
+
+        .demo-item li::before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .code-block {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .api-section {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .api-section h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .screenshot {
+            width: 100%;
+            height: 300px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #999;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 頂部標題 -->
+        <div class="header">
+            <h1>📝 每日日記獎勵系統</h1>
+            <p>透過每日寫日記累積獎勵，解鎖專屬紙籤</p>
+        </div>
+
+        <!-- 主要啟動按鈕 -->
+        <a href="diary-reward.html" class="main-btn">
+            🚀 立即開始使用
+        </a>
+
+        <!-- 功能特色 -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">✍️</div>
+                <div class="feature-title">雙模式輸入</div>
+                <div class="feature-desc">
+                    支援文字打字和語音錄音兩種輸入方式，隨時隨地記錄你的心情。
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-title">AI 情緒分析</div>
+                <div class="feature-desc">
+                    使用 ChatGPT API 智能分析你的日記內容，根據情緒給予相應獎勵。
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🪙</div>
+                <div class="feature-title">硬幣動畫回饋</div>
+                <div class="feature-desc">
+                    每次提交日記都會看到硬幣掉落動畫與音效，給你即時的正向回饋。
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">進度追蹤</div>
+                <div class="feature-desc">
+                    視覺化的進度條顯示你離目標還有多遠，激勵你持續記錄。
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎟️</div>
+                <div class="feature-title">紙籤列印</div>
+                <div class="feature-card">
+                    達成目標後可列印 AI 生成的專屬任務紙籤，給你實體的成就感。
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎮</div>
+                <div class="feature-title">互動體驗</div>
+                <div class="feature-desc">
+                    支援紅外線感應器模擬投幣動作，帶來遊戲化的互動樂趣。
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用說明 -->
+        <div class="demo-section">
+            <h2>📖 使用說明</h2>
+            
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h3>1️⃣ 開始使用</h3>
+                    <ul>
+                        <li>開啟 diary-reward.html</li>
+                        <li>選擇文字或語音輸入模式</li>
+                        <li>撰寫至少 20 字的日記</li>
+                        <li>點擊提交按鈕</li>
+                    </ul>
+                </div>
+
+                <div class="demo-item">
+                    <h3>2️⃣ 獲得獎勵</h3>
+                    <ul>
+                        <li>AI 分析你的情緒與內容</li>
+                        <li>獲得 5-30 枚硬幣</li>
+                        <li>觀看硬幣掉落動畫</li>
+                        <li>查看累積進度</li>
+                    </ul>
+                </div>
+
+                <div class="demo-item">
+                    <h3>3️⃣ 達成目標</h3>
+                    <ul>
+                        <li>累積 100 枚硬幣</li>
+                        <li>解鎖列印紙籤功能</li>
+                        <li>查看 AI 生成的任務</li>
+                        <li>列印專屬紙籤</li>
+                    </ul>
+                </div>
+
+                <div class="demo-item">
+                    <h3>4️⃣ 進階功能</h3>
+                    <ul>
+                        <li>整合 Raspberry Pi GPIO</li>
+                        <li>連接紅外線感應器</li>
+                        <li>串接熱感印紙機</li>
+                        <li>自訂獎勵參數</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- API 整合提示 -->
+        <div class="demo-section">
+            <h2>🔧 技術整合</h2>
+            
+            <div class="api-section">
+                <h3>⚠️ 需要設定的 API</h3>
+                <p>本系統提供完整的假資料測試，可以直接使用。如需完整功能，請整合以下 API：</p>
+            </div>
+
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h3>1. ChatGPT API</h3>
+                    <p><strong>用途</strong>: 日記情緒分析</p>
+                    <div class="code-block">
+// diary-reward-script.js
+// 第 200-250 行
+async function analyzeDiaryWithAI(content)
+                    </div>
+                    <p>➡️ 詳見「日記獎勵系統說明.md」</p>
+                </div>
+
+                <div class="demo-item">
+                    <h3>2. 音效檔案</h3>
+                    <p><strong>用途</strong>: 硬幣掉落音效</p>
+                    <div class="code-block">
+// sounds/coin-drop.mp3
+// 可從免費音效網站下載
+                    </div>
+                    <p>➡️ 詳見「sounds/README.md」</p>
+                </div>
+
+                <div class="demo-item">
+                    <h3>3. AI 生成內容</h3>
+                    <p><strong>用途</strong>: 紙籤任務生成</p>
+                    <div class="code-block">
+// diary-reward-script.js
+// 第 400-430 行
+async function generateTicketContent()
+                    </div>
+                    <p>➡️ 可選功能，有預設內容</p>
+                </div>
+
+                <div class="demo-item">
+                    <h3>4. 印紙機控制</h3>
+                    <p><strong>用途</strong>: Raspberry Pi 列印</p>
+                    <div class="code-block">
+// Python Flask API
+# printer_api.py
+@app.route('/api/print')
+                    </div>
+                    <p>➡️ 需要硬體設備支援</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速啟動 -->
+        <div class="demo-section">
+            <h2>⚡ 快速啟動</h2>
+            
+            <h3>Windows 系統</h3>
+            <div class="code-block">
+雙擊執行: 啟動日記系統.bat
+            </div>
+
+            <h3>macOS / Linux / Raspberry Pi</h3>
+            <div class="code-block">
+./啟動日記系統.sh
+# 或
+bash 啟動日記系統.sh
+            </div>
+
+            <h3>手動啟動</h3>
+            <div class="code-block">
+python -m http.server 8000
+# 然後訪問: http://localhost:8000/diary-reward.html
+            </div>
+        </div>
+
+        <!-- 測試功能 -->
+        <div class="demo-section">
+            <h2>🧪 測試功能</h2>
+            <p>在瀏覽器開發者工具 Console 中輸入以下指令：</p>
+            
+            <div class="code-block">
+// 填充測試日記內容
+testFillData()
+
+// 觸發硬幣動畫（15 個硬幣）
+testCoinAnimation()
+
+// 直接達到列印門檻
+testShowPrint()
+            </div>
+        </div>
+
+        <!-- 截圖展示 -->
+        <div class="demo-section">
+            <h2>📸 介面預覽</h2>
+            <div class="screenshot">
+                🖼️ 主介面截圖<br>
+                (請實際開啟應用查看完整介面)
+            </div>
+        </div>
+
+        <!-- 底部連結 -->
+        <div class="demo-section" style="text-align: center;">
+            <h2>📚 更多資源</h2>
+            <p style="margin: 20px 0; font-size: 18px;">
+                <a href="diary-reward.html" style="color: #4CAF50; text-decoration: none; font-weight: bold;">
+                    📝 開始使用應用
+                </a>
+                <span style="margin: 0 20px;">|</span>
+                <a href="日記獎勵系統說明.md" style="color: #4CAF50; text-decoration: none; font-weight: bold;">
+                    📖 完整說明文件
+                </a>
+                <span style="margin: 0 20px;">|</span>
+                <a href="sounds/README.md" style="color: #4CAF50; text-decoration: none; font-weight: bold;">
+                    🎵 音效設定說明
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
