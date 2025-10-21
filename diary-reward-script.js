@@ -52,9 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas.height = 1920 * dpr;
     ctx.scale(dpr, dpr);
     
-    // 測試繪製正方形
-    testSquare();
-    
     // 設定語音指示器點擊互動
     setupVoiceIndicator();
     
@@ -100,11 +97,6 @@ function startAnimation() {
         
         // 確保像素完美對齊，繪製正方形
         ctx.fillRect(x, y, size, size);
-        
-        // 調試：在控制台輸出硬幣資訊（僅第一個硬幣）
-        if (coins.indexOf(coin) === 0) {
-            console.log(`硬幣尺寸: ${size}x${size}, 位置: (${x}, ${y})`);
-        }
         });
         
         animationId = requestAnimationFrame(animate);
@@ -123,7 +115,8 @@ function isPositionOccupied(x, y) {
             const checkX = Math.floor(x);
             const checkY = Math.floor(y);
             
-            if (Math.abs(coinX - checkX) < COIN_SIZE && Math.abs(coinY - checkY) < COIN_SIZE) {
+            // 精確的網格碰撞檢測
+            if (coinX === checkX && coinY === checkY) {
                 return true;
             }
         }
@@ -133,25 +126,20 @@ function isPositionOccupied(x, y) {
 
 // 找到最低可用位置（確保正方形對齊）
 function findSettlePosition(currentX, currentY) {
+    // 對齊到網格
+    const gridX = Math.floor(currentX / COIN_SIZE) * COIN_SIZE;
+    
     // 從地面開始向上尋找
     for (let y = GROUND_Y; y >= 0; y -= COIN_SIZE) {
-        // 嘗試當前 x 位置周圍的位置，優先選擇居中位置
-        const xPositions = [
-            Math.floor(currentX / COIN_SIZE) * COIN_SIZE, // 對齊到網格
-            Math.floor(currentX / COIN_SIZE) * COIN_SIZE - COIN_SIZE, // 左邊
-            Math.floor(currentX / COIN_SIZE) * COIN_SIZE + COIN_SIZE, // 右邊
-        ];
+        // 檢查這個位置是否空閒
+        const isFree = !isPositionOccupied(gridX, y);
         
-        for (const x of xPositions) {
-            // 保持在邊界內
-            if (x < LEFT_MARGIN || x > RIGHT_MARGIN - COIN_SIZE) continue;
+        if (isFree) {
+            // 檢查是否有下方支撐（地面或其他硬幣）
+            const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
             
-            // 檢查這個位置是否空閒且有下方支撐
-            const hasSupport = y >= GROUND_Y || isPositionOccupied(x, y + COIN_SIZE);
-            const isFree = !isPositionOccupied(x, y);
-            
-            if (isFree && hasSupport && currentY >= y - COIN_SIZE) {
-                return { x: Math.floor(x), y: Math.floor(y) }; // 確保整數座標
+            if (hasSupport && currentY >= y - COIN_SIZE) {
+                return { x: gridX, y: y };
             }
         }
     }
@@ -181,23 +169,6 @@ function dropThreeCoins() {
     }
 }
 
-// 測試繪製正方形
-function testSquare() {
-    // 清除畫布
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, 1080, 1920);
-    
-    // 繪製測試正方形
-    ctx.fillStyle = '#FFD700';
-    ctx.fillRect(100, 100, 28, 28);
-    
-    // 繪製邊框確認正方形
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(100, 100, 28, 28);
-    
-    console.log('測試正方形已繪製在 (100, 100) 位置，尺寸 28x28');
-}
 
 // 設定語音指示器點擊互動
 function setupVoiceIndicator() {
