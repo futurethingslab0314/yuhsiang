@@ -42,9 +42,18 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.mozImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
     
-    // 確保 Canvas 不會被縮放
+    // 確保 Canvas 不會被縮放 - 使用 devicePixelRatio
+    const dpr = window.devicePixelRatio || 1;
     canvas.style.width = '1080px';
     canvas.style.height = '1920px';
+    
+    // 設定實際 Canvas 尺寸
+    canvas.width = 1080 * dpr;
+    canvas.height = 1920 * dpr;
+    ctx.scale(dpr, dpr);
+    
+    // 測試繪製正方形
+    testSquare();
     
     // 設定語音指示器點擊互動
     setupVoiceIndicator();
@@ -170,6 +179,24 @@ function dropThreeCoins() {
             coins.push(newCoin);
         }, i * 200); // 每 200ms 掉落一個
     }
+}
+
+// 測試繪製正方形
+function testSquare() {
+    // 清除畫布
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 1080, 1920);
+    
+    // 繪製測試正方形
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(100, 100, 28, 28);
+    
+    // 繪製邊框確認正方形
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(100, 100, 28, 28);
+    
+    console.log('測試正方形已繪製在 (100, 100) 位置，尺寸 28x28');
 }
 
 // 設定語音指示器點擊互動

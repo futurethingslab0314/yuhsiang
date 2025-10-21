@@ -51,6 +51,8 @@ body {
     image-rendering: crisp-edges;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: optimize-contrast;
+    object-fit: none;
+    object-position: 0 0;
 }
 
 /* === 語音指示器 - 點擊互動版本 === */
