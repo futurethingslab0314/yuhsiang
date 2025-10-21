@@ -4,23 +4,299 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素風格硬幣堆疊系統</title>
-    <link rel="stylesheet" href="diary-reward-style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 1080px;
+            height: 1920px;
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 1080/1920;
+        }
+
+        .coin-canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            object-fit: contain;
+        }
+
+        .voice-indicator {
+            position: absolute;
+            top: 170px;
+            right: 410px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .voice-dots {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .voice-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #ffffff;
+            image-rendering: pixelated;
+        }
+
+        .voice-indicator.active .voice-dot {
+            animation: voice-bounce 1.2s ease-in-out infinite;
+        }
+
+        .voice-indicator.active .voice-dot:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .voice-indicator.active .voice-dot:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes voice-bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-16px);
+            }
+        }
+
+        @media (max-width: 1080px) {
+            .canvas-container {
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            .voice-indicator {
+                top: 40px;
+                right: 40px;
+            }
+            
+            .voice-dot {
+                width: 10px;
+                height: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Canvas 容器 -->
         <div class="canvas-container">
             <canvas id="coinCanvas" class="coin-canvas"></canvas>
             
-            <!-- 語音指示器 - 右上角 -->
-            <div class="voice-indicator">
-                <div class="voice-dot"></div>
-                <div class="voice-dot"></div>
-                <div class="voice-dot"></div>
+            <div class="voice-indicator" id="voiceIndicator">
+                <div class="voice-dots">
+                    <div class="voice-dot"></div>
+                    <div class="voice-dot"></div>
+                    <div class="voice-dot"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="diary-reward-script.js"></script>
+    <script>
+        // 硬幣類別
+        class Coin {
+            constructor(x, y, velocityY, size) {
+                this.x = x;
+                this.y = y;
+                this.velocityY = velocityY;
+                this.size = size;
+                this.settled = false;
+            }
+        }
+
+        // 全域變數
+        let canvas;
+        let ctx;
+        let animationId;
+        let coins = [];
+
+        // 設定參數
+        const COIN_SIZE = 32;
+        const GRAVITY = 0.8;
+        const GROUND_Y = 1920 - 100;
+        const LEFT_MARGIN = 100;
+        const RIGHT_MARGIN = 1080 - 100;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = document.getElementById('coinCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 設定 Canvas 尺寸
+            canvas.width = 1080;
+            canvas.height = 1920;
+            
+            // 設定像素化渲染
+            ctx.imageSmoothingEnabled = false;
+            
+            // 設定語音指示器
+            setupVoiceIndicator();
+            
+            // 開始動畫
+            startAnimation();
+        });
+
+        // 開始動畫循環
+        function startAnimation() {
+            function animate() {
+                // 清除畫布
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 繪製地面線
+                ctx.fillStyle = '#333333';
+                ctx.fillRect(LEFT_MARGIN, GROUND_Y, RIGHT_MARGIN - LEFT_MARGIN, 2);
+                
+                // 繪製網格線（可選，讓網格更明顯）
+                ctx.fillStyle = '#222222';
+                const gridWidth = Math.floor((RIGHT_MARGIN - LEFT_MARGIN) / COIN_SIZE);
+                for (let i = 1; i < gridWidth; i++) {
+                    const x = LEFT_MARGIN + i * COIN_SIZE;
+                    ctx.fillRect(x, 0, 1, canvas.height);
+                }
+                
+                // 更新和繪製硬幣
+                coins.forEach((coin) => {
+                    if (!coin.settled) {
+                        // 應用重力
+                        coin.velocityY += GRAVITY;
+                        coin.y += coin.velocityY;
+                        
+                        // 檢查是否應該落腳
+                        const settlePos = findSettlePosition(coin.x, coin.y);
+                        
+                        if (settlePos && coin.y >= settlePos.y - COIN_SIZE / 2) {
+                            coin.x = settlePos.x;
+                            coin.y = settlePos.y;
+                            coin.settled = true;
+                            coin.velocityY = 0;
+                        }
+                    }
+                    
+                    // 繪製硬幣
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
+                });
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // 檢查位置是否被佔用
+        function isPositionOccupied(x, y) {
+            for (const coin of coins) {
+                if (coin.settled) {
+                    if (Math.abs(coin.x - x) < COIN_SIZE && Math.abs(coin.y - y) < COIN_SIZE) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 找到最低可用位置
+        function findSettlePosition(currentX, currentY) {
+            // 網格化落腳，像俄羅斯方塊
+            const gridX = Math.round(currentX / COIN_SIZE) * COIN_SIZE;
+            
+            for (let y = GROUND_Y; y >= 0; y -= COIN_SIZE) {
+                const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
+                const isFree = !isPositionOccupied(gridX, y);
+                
+                if (isFree && hasSupport && currentY >= y - COIN_SIZE) {
+                    return { x: gridX, y };
+                }
+            }
+            return null;
+        }
+
+        // 生成硬幣
+        function spawnCoins() {
+            // 網格化隨機掉落，像俄羅斯方塊
+            const availableWidth = RIGHT_MARGIN - LEFT_MARGIN - COIN_SIZE;
+            const gridWidth = Math.floor(availableWidth / COIN_SIZE);
+            
+            for (let i = 0; i < 3; i++) {
+                // 隨機選擇網格位置
+                const randomGridX = Math.floor(Math.random() * gridWidth);
+                const gridX = LEFT_MARGIN + randomGridX * COIN_SIZE;
+                
+                const newCoin = new Coin(
+                    gridX,
+                    -COIN_SIZE * 2 - (i * COIN_SIZE * 0.8),
+                    0,
+                    COIN_SIZE
+                );
+                
+                coins.push(newCoin);
+            }
+        }
+
+        // 設定語音指示器
+        function setupVoiceIndicator() {
+            const voiceIndicator = document.getElementById('voiceIndicator');
+            let isActive = false;
+            
+            voiceIndicator.addEventListener('pointerdown', function() {
+                isActive = true;
+                this.classList.add('active');
+            });
+            
+            voiceIndicator.addEventListener('pointerup', function() {
+                isActive = false;
+                this.classList.remove('active');
+                spawnCoins();
+            });
+            
+            voiceIndicator.addEventListener('pointerleave', function() {
+                if (isActive) {
+                    isActive = false;
+                    this.classList.remove('active');
+                }
+            });
+        }
+
+        // 清理函數
+        function cleanup() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        window.addEventListener('beforeunload', cleanup);
+    </script>
 </body>
 </html>
