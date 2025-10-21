@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素硬幣堆疊遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            position: relative;
+            width: 1080px;
+            height: 1920px;
+            max-width: 100vw;
+            max-height: 100vh;
+            background: #000;
+        }
+
+        #pixelCoinCanvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        #voiceIndicatorContainer {
+            position: absolute;
+            top: 120px;
+            right: 120px;
+            z-index: 10;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .voice-indicator-dot {
+            width: 28px;
+            height: 28px;
+            background-color: white;
+            display: inline-block;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            transition: transform 0.1s ease-in-out;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: #333;
+            color: #fff;
+            border: 2px solid #666;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: #555;
+            border-color: #888;
+        }
+
+        .control-btn:active {
+            background: #222;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #666;
+            font-size: 12px;
+            z-index: 20;
+        }
+
+        .info-item {
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        @keyframes pixelBounce {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .pixel-animation {
+            animation: pixelBounce 1.5s ease-in-out infinite;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 1200px) {
+            .game-container {
+                width: 90vw;
+                height: 90vh;
+            }
+            
+            #voiceIndicatorContainer {
+                top: 60px;
+                right: 60px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            #voiceIndicatorContainer {
+                top: 30px;
+                right: 30px;
+            }
+            
+            .voice-indicator-dot {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .controls {
+                bottom: 10px;
+                gap: 5px;
+            }
+            
+            .control-btn {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+            
+            .info-panel {
+                top: 10px;
+                left: 10px;
+                padding: 10px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 像素硬幣畫布 -->
+        <canvas id="pixelCoinCanvas"></canvas>
+        
+        <!-- 語音指示器 -->
+        <div id="voiceIndicatorContainer"></div>
+        
+        <!-- 資訊面板 -->
+        <div class="info-panel">
+            <div class="info-item">
+                <span class="info-label">硬幣數量:</span>
+                <span class="info-value" id="coinCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">最大硬幣:</span>
+                <span class="info-value" id="maxCoins">150</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">生成間隔:</span>
+                <span class="info-value" id="spawnInterval">120ms</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">狀態:</span>
+                <span class="info-value" id="gameStatus">運行中</span>
+            </div>
+        </div>
+        
+        <!-- 控制按鈕 -->
+        <div class="controls">
+            <button class="control-btn" id="pauseBtn">暫停</button>
+            <button class="control-btn" id="clearBtn">清除</button>
+            <button class="control-btn" id="speedBtn">加速</button>
+            <button class="control-btn" id="resetBtn">重置</button>
+        </div>
+    </div>
+
+    <script src="pixel-coin-system.js"></script>
+    <script>
+        // 遊戲控制邏輯
+        let gamePaused = false;
+        let gameSpeed = 1;
+        let originalSpawnInterval = 120;
+        
+        // 初始化遊戲
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待像素硬幣系統初始化
+            setTimeout(() => {
+                if (window.pixelCoinSystem) {
+                    setupControls();
+                    updateInfo();
+                    
+                    // 定期更新資訊面板
+                    setInterval(updateInfo, 100);
+                }
+            }, 1500);
+        });
+        
+        function setupControls() {
+            const pauseBtn = document.getElementById('pauseBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const speedBtn = document.getElementById('speedBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            pauseBtn.addEventListener('click', togglePause);
+            clearBtn.addEventListener('click', clearCoins);
+            speedBtn.addEventListener('click', toggleSpeed);
+            resetBtn.addEventListener('click', resetGame);
+        }
+        
+        function togglePause() {
+            gamePaused = !gamePaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusElement = document.getElementById('gameStatus');
+            
+            if (gamePaused) {
+                if (window.stopPixelCoinAnimation) {
+                    window.stopPixelCoinAnimation();
+                }
+                pauseBtn.textContent = '繼續';
+                statusElement.textContent = '已暫停';
+            } else {
+                if (window.startPixelCoinAnimation) {
+                    window.startPixelCoinAnimation();
+                }
+                pauseBtn.textContent = '暫停';
+                statusElement.textContent = '運行中';
+            }
+        }
+        
+        function clearCoins() {
+            if (window.clearPixelCoins) {
+                window.clearPixelCoins();
+            }
+        }
+        
+        function toggleSpeed() {
+            gameSpeed = gameSpeed === 1 ? 2 : 1;
+            const speedBtn = document.getElementById('speedBtn');
+            
+            if (window.pixelCoinSystem) {
+                window.pixelCoinSystem.SPAWN_INTERVAL = originalSpawnInterval / gameSpeed;
+                window.pixelCoinSystem.GRAVITY = 0.8 * gameSpeed;
+            }
+            
+            speedBtn.textContent = gameSpeed === 1 ? '加速' : '正常';
+        }
+        
+        function resetGame() {
+            gamePaused = false;
+            gameSpeed = 1;
+            
+            // 重置遊戲狀態
+            if (window.pixelCoinSystem) {
+                window.pixelCoinSystem.SPAWN_INTERVAL = originalSpawnInterval;
+                window.pixelCoinSystem.GRAVITY = 0.8;
+                window.clearPixelCoins();
+                window.stopPixelCoinAnimation();
+                
+                setTimeout(() => {
+                    window.startPixelCoinAnimation();
+                }, 100);
+            }
+            
+            // 重置按鈕文字
+            document.getElementById('pauseBtn').textContent = '暫停';
+            document.getElementById('speedBtn').textContent = '加速';
+            document.getElementById('gameStatus').textContent = '運行中';
+        }
+        
+        function updateInfo() {
+            if (window.pixelCoinSystem) {
+                document.getElementById('coinCount').textContent = window.pixelCoinSystem.coins.length;
+                document.getElementById('maxCoins').textContent = window.pixelCoinSystem.MAX_COINS;
+                document.getElementById('spawnInterval').textContent = Math.round(window.pixelCoinSystem.SPAWN_INTERVAL) + 'ms';
+            }
+        }
+        
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case ' ':
+                    event.preventDefault();
+                    togglePause();
+                    break;
+                case 'c':
+                case 'C':
+                    clearCoins();
+                    break;
+                case 'r':
+                case 'R':
+                    resetGame();
+                    break;
+                case 's':
+                case 'S':
+                    toggleSpeed();
+                    break;
+                case 'Escape':
+                    togglePause();
+                    break;
+            }
+        });
+        
+        // 觸控手勢支援
+        let touchStartTime = 0;
+        document.addEventListener('touchstart', function(event) {
+            touchStartTime = Date.now();
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            const touchDuration = Date.now() - touchStartTime;
+            
+            if (touchDuration < 200) {
+                // 短按 - 暫停/繼續
+                togglePause();
+            } else {
+                // 長按 - 清除硬幣
+                clearCoins();
+            }
+        });
+    </script>
+</body>
+</html>

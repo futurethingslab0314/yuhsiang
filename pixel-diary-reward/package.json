@@ -1,0 +1,26 @@
+{
+  "name": "pixel-diary-reward",
+  "version": "1.0.0",
+  "description": "像素日記獎勵系統 - 結合像素硬幣遊戲介面與日記獎勵規則",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "pixel-art",
+    "diary",
+    "reward",
+    "game",
+    "canvas",
+    "animation",
+    "coins",
+    "ai-analysis"
+  ],
+  "author": "Yu-Ting Cheng",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
