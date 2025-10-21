@@ -1,6 +1,6 @@
 // === 像素風格硬幣堆疊系統 - 完全符合 Pixel Art Game Interface ===
 
-// 硬幣介面
+// 硬幣類別
 class Coin {
     constructor(x, y, velocityY, size) {
         this.x = x;
@@ -16,12 +16,10 @@ let canvas;
 let ctx;
 let animationId;
 let coins = [];
-let lastSpawnTime = 0;
 
 // 設定參數
-const COIN_SIZE = 28; // 像素大小，與語音指示器相同
+const COIN_SIZE = 28; // 像素大小
 const GRAVITY = 0.8;
-const SPAWN_INTERVAL = 120; // 硬幣生成間隔（毫秒）
 const MAX_COINS = 150;
 const GROUND_Y = 1920 - 100; // 地面位置
 const LEFT_MARGIN = 100;
@@ -32,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas = document.getElementById('coinCanvas');
     ctx = canvas.getContext('2d');
     
-    // 設定 Canvas 尺寸（確保 1:1 像素比例）
+    // 設定 Canvas 尺寸
     canvas.width = 1080;
     canvas.height = 1920;
     
@@ -41,16 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.webkitImageSmoothingEnabled = false;
     ctx.mozImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
-    
-    // 確保 Canvas 不會被縮放 - 使用 devicePixelRatio
-    const dpr = window.devicePixelRatio || 1;
-    canvas.style.width = '1080px';
-    canvas.style.height = '1920px';
-    
-    // 設定實際 Canvas 尺寸
-    canvas.width = 1080 * dpr;
-    canvas.height = 1920 * dpr;
-    ctx.scale(dpr, dpr);
     
     // 設定語音指示器點擊互動
     setupVoiceIndicator();
@@ -68,9 +56,6 @@ function startAnimation() {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // 停止自動生成硬幣，改為點擊觸發
-        // 硬幣現在只通過點擊語音指示器生成
-        
         // 更新和繪製硬幣
         coins.forEach((coin) => {
             if (!coin.settled) {
@@ -82,7 +67,6 @@ function startAnimation() {
                 const settlePos = findSettlePosition(coin.x, coin.y);
                 
                 if (settlePos) {
-                    // 直接設定到落腳位置
                     coin.x = settlePos.x;
                     coin.y = settlePos.y;
                     coin.settled = true;
@@ -90,14 +74,13 @@ function startAnimation() {
                 }
             }
             
-        // 繪製硬幣為完美的正方形
-        ctx.fillStyle = '#FFD700'; // 純金色
-        const x = Math.floor(coin.x);
-        const y = Math.floor(coin.y);
-        const size = Math.floor(coin.size);
-        
-        // 確保像素完美對齊，繪製正方形
-        ctx.fillRect(x, y, size, size);
+            // 繪製硬幣為完美的正方形
+            ctx.fillStyle = '#FFD700'; // 純金色
+            const x = Math.floor(coin.x);
+            const y = Math.floor(coin.y);
+            const size = Math.floor(coin.size);
+            
+            ctx.fillRect(x, y, size, size);
         });
         
         animationId = requestAnimationFrame(animate);
@@ -106,17 +89,15 @@ function startAnimation() {
     animationId = requestAnimationFrame(animate);
 }
 
-// 檢查位置是否被佔用（確保正方形對齊）
+// 檢查位置是否被佔用
 function isPositionOccupied(x, y) {
     for (const coin of coins) {
         if (coin.settled) {
-            // 檢查位置是否重疊（網格對齊）
             const coinX = Math.floor(coin.x);
             const coinY = Math.floor(coin.y);
             const checkX = Math.floor(x);
             const checkY = Math.floor(y);
             
-            // 精確的網格碰撞檢測
             if (coinX === checkX && coinY === checkY) {
                 return true;
             }
@@ -125,7 +106,7 @@ function isPositionOccupied(x, y) {
     return false;
 }
 
-// 找到最低可用位置（確保正方形對齊）
+// 找到最低可用位置
 function findSettlePosition(currentX, currentY) {
     // 對齊到網格
     const gridX = Math.floor(currentX / COIN_SIZE) * COIN_SIZE;
@@ -136,23 +117,15 @@ function findSettlePosition(currentX, currentY) {
         const isFree = !isPositionOccupied(gridX, y);
         
         if (isFree) {
-            // 檢查是否有下方支撐（地面或其他硬幣）
+            // 檢查是否有下方支撐
             const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
             
             if (hasSupport) {
-                console.log(`硬幣落腳在: (${gridX}, ${y}), 已落腳硬幣數: ${coins.filter(c => c.settled).length}`);
                 return { x: gridX, y: y };
             }
         }
     }
     return null;
-}
-
-// 清理函數
-function cleanup() {
-    if (animationId) {
-        cancelAnimationFrame(animationId);
-    }
 }
 
 // 掉落三枚硬幣
@@ -161,16 +134,15 @@ function dropThreeCoins() {
         setTimeout(() => {
             const x = Math.random() * (RIGHT_MARGIN - LEFT_MARGIN - COIN_SIZE) + LEFT_MARGIN;
             const newCoin = new Coin(
-                Math.floor(x), // 確保整數位置
+                Math.floor(x),
                 -COIN_SIZE * 2,
                 0,
-                COIN_SIZE // 28x28 正方形
+                COIN_SIZE
             );
             coins.push(newCoin);
         }, i * 200); // 每 200ms 掉落一個
     }
 }
-
 
 // 設定語音指示器點擊互動
 function setupVoiceIndicator() {
@@ -189,6 +161,13 @@ function setupVoiceIndicator() {
                 this.classList.remove('active');
             }, 1500);
         });
+    }
+}
+
+// 清理函數
+function cleanup() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
     }
 }
 
