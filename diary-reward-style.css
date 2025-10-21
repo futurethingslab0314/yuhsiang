@@ -1,4 +1,4 @@
-/* === 像素遊戲風格 - 直式版 === */
+/* === 像素遊戲風格 - 完全符合 Pixel Art Game Interface === */
 
 /* 基礎設定 */
 :root {
@@ -29,20 +29,18 @@ body {
     image-rendering: crisp-edges;
 }
 
-/* === 主容器 - 直式佈局 === */
+/* === 主容器 === */
 .container {
     position: relative;
     width: 100vw;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
     background: #000000;
+    overflow: hidden;
 }
 
-/* === 硬幣堆疊區域 - 直式 === */
+/* === 硬幣堆疊區域 === */
 .coin-stack-container {
     position: relative;
-    flex: 1;
     width: 100%;
     height: calc(100vh - 8px);
     background: #000000;
@@ -50,7 +48,7 @@ body {
     z-index: 1;
 }
 
-/* 單個堆疊的錢幣 - 像素風格 */
+/* 單個堆疊的錢幣 - 28px 純金色方塊 */
 .stacked-coin {
     position: absolute;
     width: 28px;
@@ -61,7 +59,7 @@ body {
     image-rendering: crisp-edges;
 }
 
-/* 硬幣掉落動畫 - 隨機散落 */
+/* 硬幣掉落動畫 */
 @keyframes coin-drop-random {
     0% {
         top: -120px;
@@ -133,11 +131,11 @@ body {
     }
 }
 
-/* === 語音指示器 === */
+/* === 語音指示器 - 完全符合 Pixel Art Game Interface === */
 .voice-indicator {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 120px;
+    right: 120px;
     display: flex;
     align-items: end;
     gap: 8px;
@@ -175,7 +173,7 @@ body {
 .floating-settings-btn {
     position: fixed;
     top: 20px;
-    left: 20px;
+    right: 20px;
     width: 48px;
     height: 48px;
     background: #000;
@@ -203,7 +201,7 @@ body {
     transform: translate(2px, 2px);
 }
 
-/* === 設定面板 - 直式側邊滑出 === */
+/* === 設定面板 === */
 .settings-panel {
     position: fixed;
     top: 0;
@@ -452,8 +450,8 @@ body {
     }
     
     .voice-indicator {
-        top: 15px;
-        right: 15px;
+        top: 80px;
+        right: 80px;
     }
     
     .voice-dot {

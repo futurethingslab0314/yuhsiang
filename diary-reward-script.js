@@ -1,4 +1,4 @@
-// === 像素風格日記獎勵系統 - 直式版 JavaScript ===
+// === 像素風格日記獎勵系統 - 完全符合 Pixel Art Game Interface ===
 
 // 全域變數
 let currentCoinCount = 0;
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 初始化應用
 function initializeApp() {
-    console.log('像素風格日記系統 - 直式版 已啟動');
+    console.log('像素風格日記系統已啟動');
     
     // 初始化語音識別
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -219,7 +219,7 @@ function dropSingleCoin() {
     const coin = document.createElement('div');
     coin.className = 'stacked-coin coin-dropping';
     
-    const coinSize = 28;
+    const coinSize = 28; // 28px 像素方塊
     const containerWidth = coinStackContainer.offsetWidth;
     
     // 網格對齊的隨機位置
