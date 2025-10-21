@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas.width = 1080;
     canvas.height = 1920;
     
+    // 設定語音指示器點擊互動
+    setupVoiceIndicator();
+    
     // 開始動畫循環
     startAnimation();
 });
@@ -79,9 +82,9 @@ function startAnimation() {
                 }
             }
             
-            // 繪製硬幣為簡單的金色方塊像素
-            ctx.fillStyle = '#FFD700'; // 純金色
-            ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
+        // 繪製硬幣為完美的正方形
+        ctx.fillStyle = '#FFD700'; // 純金色
+        ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
         });
         
         animationId = requestAnimationFrame(animate);
@@ -134,6 +137,23 @@ function findSettlePosition(currentX, currentY) {
 function cleanup() {
     if (animationId) {
         cancelAnimationFrame(animationId);
+    }
+}
+
+// 設定語音指示器點擊互動
+function setupVoiceIndicator() {
+    const voiceIndicator = document.querySelector('.voice-indicator');
+    
+    if (voiceIndicator) {
+        voiceIndicator.addEventListener('click', function() {
+            // 添加 active 類別觸發動畫
+            this.classList.add('active');
+            
+            // 1.5秒後移除 active 類別
+            setTimeout(() => {
+                this.classList.remove('active');
+            }, 1500);
+        });
     }
 }
 

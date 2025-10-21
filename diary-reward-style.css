@@ -49,32 +49,42 @@ body {
     image-rendering: crisp-edges;
 }
 
-/* === 語音指示器 - 完全符合 Pixel Art Game Interface === */
+/* === 語音指示器 - 點擊互動版本 === */
 .voice-indicator {
     position: absolute;
     top: 120px;
     right: 120px;
     display: flex;
     align-items: end;
-    gap: 8px;
+    gap: 4px;
     z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.voice-indicator:hover {
+    transform: scale(1.1);
 }
 
 .voice-dot {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
     background: #FFFFFF;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-    animation: voice-bounce 1.5s ease-in-out infinite;
+    transition: all 0.3s ease;
 }
 
-.voice-dot:nth-child(2) {
+.voice-indicator.active .voice-dot {
+    animation: voice-bounce 1.5s ease-in-out;
+}
+
+.voice-indicator.active .voice-dot:nth-child(2) {
     animation-delay: 0.2s;
 }
 
-.voice-dot:nth-child(3) {
+.voice-indicator.active .voice-dot:nth-child(3) {
     animation-delay: 0.4s;
 }
 
@@ -83,7 +93,7 @@ body {
         transform: translateY(0);
     }
     50% {
-        transform: translateY(-20px);
+        transform: translateY(-15px);
     }
 }
 
@@ -100,8 +110,8 @@ body {
     }
     
     .voice-dot {
-        width: 24px;
-        height: 24px;
+        width: 16px;
+        height: 16px;
     }
 }
 
