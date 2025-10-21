@@ -36,6 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas.width = 1080;
     canvas.height = 1920;
     
+    // 設定像素化渲染
+    ctx.imageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    
     // 設定語音指示器點擊互動
     setupVoiceIndicator();
     
@@ -78,7 +84,14 @@ function startAnimation() {
         const x = Math.floor(coin.x);
         const y = Math.floor(coin.y);
         const size = Math.floor(coin.size);
+        
+        // 確保像素完美對齊
         ctx.fillRect(x, y, size, size);
+        
+        // 添加黑色邊框以確保正方形邊界清晰
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, size, size);
         });
         
         animationId = requestAnimationFrame(animate);
