@@ -78,12 +78,13 @@ function startAnimation() {
                 coin.velocityY += GRAVITY;
                 coin.y += coin.velocityY;
                 
-                // 嘗試找到落腳位置
+                // 檢查是否應該落腳
                 const settlePos = findSettlePosition(coin.x, coin.y);
                 
-                if (settlePos && coin.y >= settlePos.y - COIN_SIZE / 2) {
-                    coin.x = Math.floor(settlePos.x); // 確保整數座標
-                    coin.y = Math.floor(settlePos.y); // 確保整數座標
+                if (settlePos) {
+                    // 直接設定到落腳位置
+                    coin.x = settlePos.x;
+                    coin.y = settlePos.y;
                     coin.settled = true;
                     coin.velocityY = 0;
                 }
@@ -138,7 +139,8 @@ function findSettlePosition(currentX, currentY) {
             // 檢查是否有下方支撐（地面或其他硬幣）
             const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
             
-            if (hasSupport && currentY >= y - COIN_SIZE) {
+            if (hasSupport) {
+                console.log(`硬幣落腳在: (${gridX}, ${y}), 已落腳硬幣數: ${coins.filter(c => c.settled).length}`);
                 return { x: gridX, y: y };
             }
         }
