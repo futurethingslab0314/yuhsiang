@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas = document.getElementById('coinCanvas');
     ctx = canvas.getContext('2d');
     
-    // 設定 Canvas 尺寸
+    // 設定 Canvas 尺寸（確保 1:1 像素比例）
     canvas.width = 1080;
     canvas.height = 1920;
     
@@ -41,6 +41,10 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.webkitImageSmoothingEnabled = false;
     ctx.mozImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
+    
+    // 確保 Canvas 不會被縮放
+    canvas.style.width = '1080px';
+    canvas.style.height = '1920px';
     
     // 設定語音指示器點擊互動
     setupVoiceIndicator();
@@ -85,13 +89,13 @@ function startAnimation() {
         const y = Math.floor(coin.y);
         const size = Math.floor(coin.size);
         
-        // 確保像素完美對齊
+        // 確保像素完美對齊，繪製正方形
         ctx.fillRect(x, y, size, size);
         
-        // 添加黑色邊框以確保正方形邊界清晰
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, size, size);
+        // 調試：在控制台輸出硬幣資訊（僅第一個硬幣）
+        if (coins.indexOf(coin) === 0) {
+            console.log(`硬幣尺寸: ${size}x${size}, 位置: (${x}, ${y})`);
+        }
         });
         
         animationId = requestAnimationFrame(animate);
