@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素風格日記獎勵系統 - 直式版</title>
+    <link rel="stylesheet" href="diary-reward-vertical-style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 硬幣堆疊區域 -->
+        <div class="coin-stack-container" id="coinStackContainer">
+            <!-- 硬幣會動態添加在這裡 -->
+        </div>
+        
+        <!-- 地面線 -->
+        <div class="ground-line"></div>
+        
+        <!-- Toast 提示 -->
+        <div class="toast-container">
+            <div class="today-gain-toast hidden" id="todayGainToast">
+                <span class="toast-text">今日 +<span id="toastAmount">0</span></span>
+            </div>
+        </div>
+
+        <!-- 語音指示器 -->
+        <div class="voice-indicator" id="voiceIndicator">
+            <div class="voice-dot"></div>
+            <div class="voice-dot"></div>
+            <div class="voice-dot"></div>
+        </div>
+        
+        <!-- 設定按鈕 -->
+        <button class="floating-settings-btn" id="settingsBtn" title="開啟設定">
+            ⚙️
+        </button>
+
+        <!-- 設定面板（側邊滑出） -->
+        <div class="settings-panel hidden" id="settingsPanel">
+            <div class="settings-header">
+                <h2 class="settings-title">設定與輸入</h2>
+                <button class="close-btn" id="closeBtn">✕</button>
+            </div>
+            
+            <div class="settings-content">
+                <!-- 日期顯示 -->
+                <div class="date-display" id="dateDisplay"></div>
+                
+                <!-- 輸入模式選擇 -->
+                <div class="input-mode-section">
+                    <h3>輸入模式</h3>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" id="textModeBtn">📝 文字</button>
+                        <button class="mode-btn" id="voiceModeBtn">🎤 語音</button>
+                    </div>
+                </div>
+                
+                <!-- 日記輸入區域 -->
+                <div class="diary-input-section">
+                    <h3>今日日記</h3>
+                    <textarea 
+                        class="diary-textarea" 
+                        id="diaryTextarea" 
+                        placeholder="寫下你的心情..."
+                        rows="6"
+                    ></textarea>
+                    
+                    <!-- 語音錄製區域 -->
+                    <div class="voice-recording hidden" id="voiceRecording">
+                        <div class="voice-status" id="voiceStatus">點擊開始錄音</div>
+                        <button class="record-btn" id="recordBtn">🎤 開始錄音</button>
+                    </div>
+                </div>
+                
+                <!-- 提交按鈕 -->
+                <button class="submit-btn" id="submitBtn">
+                    ✨ 提交日記
+                </button>
+                
+                <!-- 進度顯示 -->
+                <div class="progress-section">
+                    <h3>進度追蹤</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="currentProgress">0</span>/100
+                    </div>
+                    <div class="today-gain" id="todayGain">今日獲得: +0</div>
+                </div>
+                
+                <!-- 測試功能 -->
+                <div class="test-section">
+                    <h3>測試功能</h3>
+                    <div class="test-buttons">
+                        <button class="test-btn" id="coinTestBtn">💰 投幣動畫</button>
+                        <button class="test-btn" id="fillTestBtn">📝 填充測試</button>
+                        <button class="test-btn" id="targetTestBtn">🎟️ 達標測試</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="diary-reward-vertical-script.js"></script>
+</body>
+</html>
