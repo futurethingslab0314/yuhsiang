@@ -90,6 +90,117 @@
             }
         }
 
+        /* 引導語顯示區域（滿版黃底黑字） */
+        .guide-message {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 60px;
+            background-color: #FFD700; /* 與金幣相同黃色 */
+            color: #000000;
+            text-align: center;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-size: 36px;
+            line-height: 1.7;
+            font-weight: bold;
+            letter-spacing: 1px;
+            image-rendering: pixelated;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .guide-message.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .guide-message .guide-text {
+            margin-bottom: 24px;
+            color: #000000;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .guide-message .guide-hint {
+            font-size: 22px;
+            color: #000000;
+            opacity: 0.8;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* 列印提示區域 */
+        .print-notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            padding: 60px 40px;
+            background-color: rgba(255, 215, 0, 0.95);
+            border: 4px solid #ffffff;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .print-notification.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .print-notification .print-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .print-notification .print-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 20px;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            letter-spacing: 1px;
+        }
+
+        .print-notification .print-message {
+            font-size: 24px;
+            color: #333333;
+            line-height: 1.5;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* 狀態指示器（測試用） */
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            z-index: 100;
+            display: none;
+        }
+
+        .debug-info.show {
+            display: block;
+        }
+
         @media (max-width: 1080px) {
             .canvas-container {
                 width: 100vw;
@@ -105,6 +216,30 @@
                 width: 10px;
                 height: 10px;
             }
+
+            .guide-message {
+                font-size: 24px;
+                padding: 40px 24px;
+                font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+                font-weight: bold;
+                letter-spacing: 1px;
+            }
+
+            .print-notification {
+                padding: 40px 30px;
+            }
+
+            .print-notification .print-icon {
+                font-size: 60px;
+            }
+
+            .print-notification .print-title {
+                font-size: 28px;
+            }
+
+            .print-notification .print-message {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
@@ -113,6 +248,7 @@
         <div class="canvas-container">
             <canvas id="coinCanvas" class="coin-canvas"></canvas>
             
+            <!-- 語音指示器 -->
             <div class="voice-indicator" id="voiceIndicator">
                 <div class="voice-dots">
                     <div class="voice-dot"></div>
@@ -120,11 +256,37 @@
                     <div class="voice-dot"></div>
                 </div>
             </div>
+
+            <!-- 引導語顯示 -->
+            <div class="guide-message" id="guideMessage">
+                <div class="guide-text" id="guideText"></div>
+                <div class="guide-hint">輕觸開關開始記錄</div>
+            </div>
+
+            <!-- 列印提示 -->
+            <div class="print-notification" id="printNotification">
+                <div class="print-icon">📄</div>
+                <div class="print-title">恭喜你！</div>
+                <div class="print-message" id="printMessage">
+                    已累積足夠金幣<br>
+                    正在列印你的紙籤...
+                </div>
+            </div>
+
+            <!-- 除錯資訊 -->
+            <div class="debug-info" id="debugInfo">
+                <div>狀態: <span id="debugState">待機</span></div>
+                <div>金幣數: <span id="debugCoins">0</span></div>
+                <div>目標: <span id="debugTarget">30</span></div>
+                <div>錄音: <span id="debugRecording">否</span></div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ====================================
         // 硬幣類別
+        // ====================================
         class Coin {
             constructor(x, y, velocityY, size) {
                 this.x = x;
@@ -135,7 +297,9 @@
             }
         }
 
+        // ====================================
         // 全域變數
+        // ====================================
         let canvas;
         let ctx;
         let animationId;
@@ -148,27 +312,79 @@
         const LEFT_MARGIN = 100;
         const RIGHT_MARGIN = 1080 - 100;
 
+        // ====================================
+        // 系統狀態管理
+        // ====================================
+        const SystemState = {
+            IDLE: 'idle',                    // 待機（顯示引導語）
+            RECORDING: 'recording',          // 錄音中
+            PROCESSING: 'processing',        // 處理中
+            REWARD: 'reward',                // 獎勵動畫
+            PRINT_READY: 'print_ready'       // 準備列印
+        };
+
+        const AppState = {
+            currentState: SystemState.IDLE,
+            totalCoins: 0,
+            coinThreshold: 30,              // 列印門檻
+            isRecording: false,
+            currentGuideText: '',
+            debugMode: false,
+            // 引導語排程（預設 22:00 顯示一次）
+            guideEnabled: true,
+            guideHour: 22,
+            guideMinute: 0,
+            lastGuideShownDate: null
+        };
+
+        // UI 元素
+        let guideMessageEl, guideTextEl;
+        let printNotificationEl, printMessageEl;
+        let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
+        let voiceIndicatorEl;
+
+        // ====================================
         // 初始化
+        // ====================================
         document.addEventListener('DOMContentLoaded', function() {
+            // Canvas 初始化
             canvas = document.getElementById('coinCanvas');
             ctx = canvas.getContext('2d');
-            
-            // 設定 Canvas 尺寸
             canvas.width = 1080;
             canvas.height = 1920;
-            
-            // 設定像素化渲染
             ctx.imageSmoothingEnabled = false;
+            
+            // UI 元素初始化
+            guideMessageEl = document.getElementById('guideMessage');
+            guideTextEl = document.getElementById('guideText');
+            printNotificationEl = document.getElementById('printNotification');
+            printMessageEl = document.getElementById('printMessage');
+            debugInfoEl = document.getElementById('debugInfo');
+            debugStateEl = document.getElementById('debugState');
+            debugCoinsEl = document.getElementById('debugCoins');
+            debugRecordingEl = document.getElementById('debugRecording');
+            voiceIndicatorEl = document.getElementById('voiceIndicator');
             
             // 設定語音指示器
             setupVoiceIndicator();
             
             // 開始動畫
             startAnimation();
+            
+            // 初始化系統狀態
+            initializeSystem();
+            
+            // 設定 Console 測試指令
+            setupConsoleCommands();
+            
+            console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
 
         // 開始動畫循環
         function startAnimation() {
+            if (typeof window.__printedRoundFlag === 'undefined') {
+                window.__printedRoundFlag = false;
+            }
             function animate() {
                 // 清除畫布
                 ctx.fillStyle = '#000000';
@@ -178,13 +394,7 @@
                 ctx.fillStyle = '#333333';
                 ctx.fillRect(LEFT_MARGIN, GROUND_Y, RIGHT_MARGIN - LEFT_MARGIN, 2);
                 
-                // 繪製網格線（可選，讓網格更明顯）
-                ctx.fillStyle = '#222222';
-                const gridWidth = Math.floor((RIGHT_MARGIN - LEFT_MARGIN) / COIN_SIZE);
-                for (let i = 1; i < gridWidth; i++) {
-                    const x = LEFT_MARGIN + i * COIN_SIZE;
-                    ctx.fillRect(x, 0, 1, canvas.height);
-                }
+                // （已移除）背景直條格線
                 
                 // 更新和繪製硬幣
                 coins.forEach((coin) => {
@@ -208,6 +418,22 @@
                     ctx.fillStyle = '#FFD700';
                     ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
                 });
+                
+                // 計算目前堆疊最高點
+                const highestTopY = getHighestStackTopY();
+                
+                // 取得語音指示器相對於畫布的 Y（以畫布座標）
+                const indicatorRect = voiceIndicatorEl.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                const indicatorCenterYClient = ((indicatorRect.top + indicatorRect.bottom) / 2) - canvasRect.top;
+                const scaleY = canvas.height / canvasRect.height;
+                const indicatorCenterY = indicatorCenterYClient * scaleY; // 轉為畫布座標
+                
+                // 當堆疊高度達到或超過語音指示器位置，觸發列印（僅一次）
+                if (!window.__printedRoundFlag && highestTopY !== null && highestTopY <= indicatorCenterY) {
+                    window.__printedRoundFlag = true;
+                    triggerPrintNotification();
+                }
                 
                 animationId = requestAnimationFrame(animate);
             }
@@ -243,13 +469,49 @@
             return null;
         }
 
-        // 生成硬幣
-        function spawnCoins() {
+        // ====================================
+        // 畫面填滿檢測（所有欄位堆到頂端）
+        // ====================================
+        function isScreenFilled() {
+            const columns = Math.floor((RIGHT_MARGIN - LEFT_MARGIN) / COIN_SIZE);
+            const heights = new Array(columns).fill(0);
+            
+            // 計算每一欄的最高堆疊高度
+            for (const coin of coins) {
+                if (!coin.settled) continue;
+                const colIndex = Math.round((coin.x - LEFT_MARGIN) / COIN_SIZE);
+                if (colIndex < 0 || colIndex >= columns) continue;
+                const topY = coin.y; // y 越小越靠上
+                heights[colIndex] = Math.max(heights[colIndex], (GROUND_Y - topY) + COIN_SIZE);
+            }
+            
+            // 若每一欄的高度都達到可視高度，視為填滿
+            const requiredHeight = GROUND_Y; // 從 0 到地面視為可堆疊區域
+            const allFilled = heights.every(h => h >= requiredHeight);
+            
+            console.log('🧱 欄位高度:', heights, '是否填滿:', allFilled);
+            return allFilled;
+        }
+
+        // 取得目前堆疊最高點（y 越小越高）。若沒有 settled 硬幣則回傳 null。
+        function getHighestStackTopY() {
+            let minY = null;
+            for (const coin of coins) {
+                if (!coin.settled) continue;
+                if (minY === null || coin.y < minY) {
+                    minY = coin.y;
+                }
+            }
+            return minY;
+        }
+
+        // 生成硬幣（同步生成）
+        function spawnCoins(count = 30) {
             // 網格化隨機掉落，像俄羅斯方塊
             const availableWidth = RIGHT_MARGIN - LEFT_MARGIN - COIN_SIZE;
             const gridWidth = Math.floor(availableWidth / COIN_SIZE);
             
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < count; i++) {
                 // 隨機選擇網格位置
                 const randomGridX = Math.floor(Math.random() * gridWidth);
                 const gridX = LEFT_MARGIN + randomGridX * COIN_SIZE;
@@ -265,28 +527,420 @@
             }
         }
 
+        // 分散時序掉落：在 durationMs 期間內平均分配，並加入少量隨機抖動
+        function spawnCoinsStaggered(count = 150, durationMs = 5000) {
+            const step = durationMs / count;
+            for (let i = 0; i < count; i++) {
+                const jitter = (Math.random() - 0.5) * step * 0.5; // ±25% 抖動
+                const delay = Math.max(0, Math.floor(i * step + jitter));
+                setTimeout(() => {
+                    spawnCoins(1);
+                }, delay);
+            }
+        }
+
         // 設定語音指示器
         function setupVoiceIndicator() {
             const voiceIndicator = document.getElementById('voiceIndicator');
-            let isActive = false;
             
             voiceIndicator.addEventListener('pointerdown', function() {
-                isActive = true;
-                this.classList.add('active');
+                handleRecordingStart();
             });
             
             voiceIndicator.addEventListener('pointerup', function() {
-                isActive = false;
-                this.classList.remove('active');
-                spawnCoins();
+                handleRecordingEnd();
             });
             
             voiceIndicator.addEventListener('pointerleave', function() {
-                if (isActive) {
-                    isActive = false;
-                    this.classList.remove('active');
+                if (AppState.isRecording) {
+                    handleRecordingEnd();
                 }
             });
+        }
+
+        // ====================================
+        // 系統初始化
+        // ====================================
+        function initializeSystem() {
+            // 載入儲存的金幣數
+            loadCoinsFromStorage();
+            loadGuideScheduleFromStorage();
+            
+            // 顯示當日引導語
+            maybeShowScheduledGuide();
+            
+            // 更新除錯資訊
+            updateDebugInfo();
+
+            // 啟動每分鐘排程檢查
+            setInterval(maybeShowScheduledGuide, 60 * 1000);
+        }
+
+        // ====================================
+        // 引導語系統
+        // ====================================
+        function loadGuideScheduleFromStorage() {
+            const raw = localStorage.getItem('guideSchedule');
+            if (!raw) return;
+            try {
+                const obj = JSON.parse(raw);
+                AppState.guideEnabled = obj.enabled ?? AppState.guideEnabled;
+                AppState.guideHour = obj.hour ?? AppState.guideHour;
+                AppState.guideMinute = obj.minute ?? AppState.guideMinute;
+                AppState.lastGuideShownDate = obj.lastDate ?? null;
+            } catch {}
+        }
+
+        function saveGuideScheduleToStorage() {
+            const payload = {
+                enabled: AppState.guideEnabled,
+                hour: AppState.guideHour,
+                minute: AppState.guideMinute,
+                lastDate: AppState.lastGuideShownDate
+            };
+            localStorage.setItem('guideSchedule', JSON.stringify(payload));
+        }
+
+        function maybeShowScheduledGuide() {
+            if (!AppState.guideEnabled) return;
+            const now = new Date();
+            const currentDate = now.toISOString().slice(0, 10);
+            const alreadyShownToday = AppState.lastGuideShownDate === currentDate;
+            if (alreadyShownToday) return;
+            if (now.getHours() > AppState.guideHour || (now.getHours() === AppState.guideHour && now.getMinutes() >= AppState.guideMinute)) {
+                showDailyGuide();
+                AppState.lastGuideShownDate = currentDate;
+                saveGuideScheduleToStorage();
+            }
+        }
+
+        function showDailyGuide() {
+            // TODO: 從 ChatGPT/Firebase 獲取引導語
+            const sampleGuides = [
+                "今天有什麼讓你感到開心的事情嗎？",
+                "最近有遇到什麼挑戰嗎？想聊聊看嗎？",
+                "今天的心情如何？記錄下來吧！",
+                "有什麼想對未來的自己說的話嗎？",
+                "今天學到了什麼新東西嗎？"
+            ];
+            
+            const randomGuide = sampleGuides[Math.floor(Math.random() * sampleGuides.length)];
+            AppState.currentGuideText = randomGuide;
+            guideTextEl.textContent = randomGuide;
+            
+            // 顯示引導語（滿版，直到錄音結束才關閉）
+            guideMessageEl.classList.add('show');
+            
+            console.log('📝 顯示引導語:', randomGuide);
+        }
+
+        function hideGuideMessage() {
+            guideMessageEl.classList.remove('show');
+        }
+
+        // ====================================
+        // 錄音處理
+        // ====================================
+        function handleRecordingStart() {
+            if (AppState.isRecording) return;
+            
+            AppState.isRecording = true;
+            AppState.currentState = SystemState.RECORDING;
+            
+            // 更新 UI
+            document.getElementById('voiceIndicator').classList.add('active');
+            // 錄音期間維持顯示引導層（不隱藏）
+            
+            // TODO: 開始錄音
+            console.log('🎤 開始錄音...');
+            
+            // 模擬音效
+            playSound('start');
+            
+            updateDebugInfo();
+        }
+
+        function handleRecordingEnd() {
+            if (!AppState.isRecording) return;
+            
+            AppState.isRecording = false;
+            AppState.currentState = SystemState.PROCESSING;
+            
+            // 更新 UI
+            document.getElementById('voiceIndicator').classList.remove('active');
+            // 錄音結束：關閉滿版引導層
+            hideGuideMessage();
+            
+            // TODO: 停止錄音並上傳
+            console.log('⏹️ 停止錄音，開始處理...');
+            
+            // 模擬音效
+            playSound('end');
+            
+            // 處理錄音並獎勵
+            processRecording();
+            
+            updateDebugInfo();
+        }
+
+        function processRecording() {
+            // TODO: 上傳到 Firebase
+            // TODO: 更新 Firestore 記錄
+            
+            console.log('📤 上傳錄音到 Firebase...');
+            
+            // 模擬處理延遲
+            setTimeout(() => {
+                AppState.currentState = SystemState.REWARD;
+                giveReward();
+                updateDebugInfo();
+            }, 500);
+        }
+
+        // ====================================
+        // 獎勵系統
+        // ====================================
+        function giveReward() {
+            // 掉落金幣（分散時序 150 枚）
+            const dropCount = 150;
+            const durationMs = 6000; // 6 秒內分散掉落
+            spawnCoinsStaggered(dropCount, durationMs);
+            
+            // 更新金幣數（作為統計用途）
+            AppState.totalCoins += dropCount;
+            saveCoinsToStorage();
+            
+            console.log(`💰 獲得 ${dropCount} 枚金幣（分散掉落）！總計:`, AppState.totalCoins);
+            
+            // 列印觸發改由動畫迴圈根據堆疊高度偵測（達到白色點高度）
+            
+            // 回到待機狀態
+            setTimeout(() => {
+                AppState.currentState = SystemState.IDLE;
+                updateDebugInfo();
+            }, durationMs + 2000);
+            
+            updateDebugInfo();
+        }
+
+        // ====================================
+        // 列印通知
+        // ====================================
+        function triggerPrintNotification() {
+            AppState.currentState = SystemState.PRINT_READY;
+            
+            printMessageEl.innerHTML = `
+                已累積 ${AppState.totalCoins} 枚金幣！<br>
+                正在列印你的專屬紙籤...
+            `;
+            
+            printNotificationEl.classList.add('show');
+            
+            console.log('🎉 觸發列印通知！');
+            
+            // TODO: 觸發實體列印
+            executePrint();
+            
+            // 5秒後隱藏通知
+            setTimeout(() => {
+                hidePrintNotification();
+            }, 5000);
+            
+            updateDebugInfo();
+        }
+
+        function hidePrintNotification() {
+            printNotificationEl.classList.remove('show');
+            
+            // 重置金幣數
+            AppState.totalCoins = 0;
+            saveCoinsToStorage();
+            
+            // 清空畫面上的金幣
+            coins = [];
+            
+            // 回到待機狀態
+            AppState.currentState = SystemState.IDLE;
+            // 允許下一回合再次觸發
+            window.__printedRoundFlag = false;
+            
+            updateDebugInfo();
+        }
+
+        function executePrint() {
+            // TODO: 串接熱感應印表機 API
+            // TODO: ChatGPT 生成列印內容
+            
+            console.log('🖨️ 執行列印程序...');
+            
+            // 模擬列印內容
+            const printContent = {
+                type: 'reflection',
+                date: new Date().toLocaleDateString('zh-TW'),
+                message: '你已經堅持記錄了一段時間，繼續保持！',
+                encouragement: '每一次的記錄都是成長的痕跡 ✨'
+            };
+            
+            console.log('📄 列印內容:', printContent);
+        }
+
+        // ====================================
+        // 資料儲存
+        // ====================================
+        function saveCoinsToStorage() {
+            localStorage.setItem('totalCoins', AppState.totalCoins.toString());
+        }
+
+        function loadCoinsFromStorage() {
+            const saved = localStorage.getItem('totalCoins');
+            if (saved) {
+                AppState.totalCoins = parseInt(saved, 10);
+                console.log('💾 載入已儲存的金幣數:', AppState.totalCoins);
+            }
+        }
+
+        // ====================================
+        // 音效系統
+        // ====================================
+        function playSound(type) {
+            // TODO: 使用 Web Audio API 或音檔
+            console.log('🔊 播放音效:', type);
+        }
+
+        // ====================================
+        // 除錯工具
+        // ====================================
+        function updateDebugInfo() {
+            if (!AppState.debugMode) return;
+            
+            debugStateEl.textContent = AppState.currentState;
+            debugCoinsEl.textContent = AppState.totalCoins;
+            debugRecordingEl.textContent = AppState.isRecording ? '是' : '否';
+        }
+
+        // ====================================
+        // Console 測試指令
+        // ====================================
+        function setupConsoleCommands() {
+            // 全域測試函數
+            window.help = function() {
+                console.log(`
+╔════════════════════════════════════════════════╗
+║         🎮 Console 測試指令列表                ║
+╠════════════════════════════════════════════════╣
+║ help()           - 顯示此幫助訊息              ║
+║ debug()          - 開啟/關閉除錯模式           ║
+║ showGuide()      - 顯示引導語                  ║
+║ hideGuide()      - 隱藏引導語                  ║
+║ startRecord()    - 模擬開始錄音                ║
+║ stopRecord()     - 模擬停止錄音                ║
+║ addCoins(n)      - 增加 n 枚金幣               ║
+║ showPrint()      - 顯示列印通知                ║
+║ hidePrint()      - 隱藏列印通知                ║
+║ resetCoins()     - 重置金幣數                  ║
+║ getState()       - 查看當前狀態                ║
+║ setThreshold(n)  - 設定列印門檻                ║
+║ setGuide(h,m)    - 設定引導語時間（24h）       ║
+║ enableGuide(b)   - 啟用/關閉排程（true/false） ║
+║ checkGuideNow()  - 立即檢查是否要顯示引導語    ║
+║ resetGuideToday()- 清除今日已顯示記錄          ║
+╚════════════════════════════════════════════════╝
+                `);
+            };
+
+            window.debug = function() {
+                AppState.debugMode = !AppState.debugMode;
+                debugInfoEl.classList.toggle('show');
+                updateDebugInfo();
+                console.log('🐛 除錯模式:', AppState.debugMode ? '開啟' : '關閉');
+            };
+
+            window.showGuide = function() {
+                showDailyGuide();
+            };
+
+            window.hideGuide = function() {
+                hideGuideMessage();
+            };
+
+            window.startRecord = function() {
+                handleRecordingStart();
+            };
+
+            window.stopRecord = function() {
+                handleRecordingEnd();
+            };
+
+            window.addCoins = function(count = 150, durationMs = 6000) {
+                AppState.totalCoins += count;
+                saveCoinsToStorage();
+                spawnCoinsStaggered(count, durationMs);
+                updateDebugInfo();
+                console.log(`💰 增加 ${count} 枚金幣（分散 ${durationMs}ms）！總計: ${AppState.totalCoins}`);
+                
+                setTimeout(() => {
+                    if (isScreenFilled()) {
+                        console.log('🎉 畫面已填滿，準備列印');
+                    }
+                }, durationMs + 1500);
+            };
+
+            window.showPrint = function() {
+                triggerPrintNotification();
+            };
+
+            window.hidePrint = function() {
+                hidePrintNotification();
+            };
+
+            window.resetCoins = function() {
+                AppState.totalCoins = 0;
+                saveCoinsToStorage();
+                coins = [];
+                updateDebugInfo();
+                console.log('🔄 金幣數已重置');
+            };
+
+            window.getState = function() {
+                console.log('📊 當前狀態:', {
+                    state: AppState.currentState,
+                    totalCoins: AppState.totalCoins,
+                    threshold: AppState.coinThreshold,
+                    isRecording: AppState.isRecording,
+                    guideText: AppState.currentGuideText
+                });
+                return AppState;
+            };
+
+            window.setThreshold = function(n) {
+                AppState.coinThreshold = n;
+                document.getElementById('debugTarget').textContent = n;
+                console.log(`🎯 列印門檻設定為: ${n}`);
+            };
+
+            // ===== 引導語排程 =====
+            window.setGuide = function(h = 22, m = 0) {
+                AppState.guideHour = Math.max(0, Math.min(23, parseInt(h, 10)));
+                AppState.guideMinute = Math.max(0, Math.min(59, parseInt(m, 10)));
+                saveGuideScheduleToStorage();
+                console.log(`🕙 引導語時間設定為：${AppState.guideHour.toString().padStart(2,'0')}:${AppState.guideMinute.toString().padStart(2,'0')}`);
+            };
+
+            window.enableGuide = function(enabled = true) {
+                AppState.guideEnabled = !!enabled;
+                saveGuideScheduleToStorage();
+                console.log(`🧭 引導語排程：${AppState.guideEnabled ? '啟用' : '關閉'}`);
+            };
+
+            window.checkGuideNow = function() {
+                maybeShowScheduledGuide();
+            };
+
+            window.resetGuideToday = function() {
+                AppState.lastGuideShownDate = null;
+                saveGuideScheduleToStorage();
+                console.log('🔄 已清除今日引導語顯示記錄');
+            };
         }
 
         // 清理函數
