@@ -614,24 +614,30 @@
             }
         }
 
-        function showDailyGuide() {
-            // TODO: 從 ChatGPT/Firebase 獲取引導語
-            const sampleGuides = [
-                "今天有什麼讓你感到開心的事情嗎？",
-                "最近有遇到什麼挑戰嗎？想聊聊看嗎？",
-                "今天的心情如何？記錄下來吧！",
-                "有什麼想對未來的自己說的話嗎？",
-                "今天學到了什麼新東西嗎？"
-            ];
-            
-            const randomGuide = sampleGuides[Math.floor(Math.random() * sampleGuides.length)];
-            AppState.currentGuideText = randomGuide;
-            guideTextEl.textContent = randomGuide;
-            
-            // 顯示引導語（滿版，直到錄音結束才關閉）
-            guideMessageEl.classList.add('show');
-            
-            console.log('📝 顯示引導語:', randomGuide);
+        async function showDailyGuide() {
+            try {
+                // 先顯示載入中的簡短字樣，避免空白
+                guideTextEl.textContent = '生成引導語中…';
+                guideMessageEl.classList.add('show');
+
+                const resp = await fetch('/api/generate-guide', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: new Date().toISOString().slice(0,10) })
+                });
+                if (!resp.ok) throw new Error('API 失敗');
+                const data = await resp.json();
+                const text = (data.guideText || '').trim();
+                AppState.currentGuideText = text;
+                guideTextEl.textContent = text || '今晚想對自己說些什麼？';
+                console.log('📝 顯示引導語(From API):', text);
+            } catch (e) {
+                console.error('取得引導語失敗，改用預設樣本：', e);
+                const fallback = '今晚想對自己說些什麼？';
+                AppState.currentGuideText = fallback;
+                guideTextEl.textContent = fallback;
+                guideMessageEl.classList.add('show');
+            }
         }
 
         function hideGuideMessage() {
@@ -767,21 +773,22 @@
             updateDebugInfo();
         }
 
-        function executePrint() {
-            // TODO: 串接熱感應印表機 API
-            // TODO: ChatGPT 生成列印內容
-            
-            console.log('🖨️ 執行列印程序...');
-            
-            // 模擬列印內容
-            const printContent = {
-                type: 'reflection',
-                date: new Date().toLocaleDateString('zh-TW'),
-                message: '你已經堅持記錄了一段時間，繼續保持！',
-                encouragement: '每一次的記錄都是成長的痕跡 ✨'
-            };
-            
-            console.log('📄 列印內容:', printContent);
+        async function executePrint() {
+            try {
+                console.log('🖨️ 執行列印程序...');
+                const resp = await fetch('/api/generate-print', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: new Date().toISOString().slice(0,10) })
+                });
+                if (!resp.ok) throw new Error('API 失敗');
+                const data = await resp.json();
+                const printText = (data.printText || '').trim();
+                console.log('📄 列印內容(From API):', printText);
+                // TODO: 將 printText 送往實體印表機
+            } catch (e) {
+                console.error('生成列印內容失敗：', e);
+            }
         }
 
         // ====================================
