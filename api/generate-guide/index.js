@@ -58,6 +58,11 @@ export default async function handler(req, res) {
     try {
         const { userId = 'default-user', date, daysToAnalyze = 7 } = req.body || {};
 
+        // 檢查 OpenAI API Key
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY 環境變數未設定');
+        }
+
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY
         });
@@ -74,17 +79,18 @@ export default async function handler(req, res) {
                     .limit(daysToAnalyze)
                     .get();
 
-            recentDiaries = diariesSnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    date: data.dateString || data.date?.toDate?.()?.toISOString?.()?.slice(0, 10) || '',
-                    content: data.content || ''
-                };
-            });
+                recentDiaries = diariesSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        date: data.dateString || data.date?.toDate?.()?.toISOString?.()?.slice(0, 10) || '',
+                        content: data.content || ''
+                    };
+                });
 
-            console.log(`📖 讀取到 ${recentDiaries.length} 筆最近日記`);
-        } catch (error) {
-            console.log('⚠️ 無法讀取歷史日記，將使用預設引導語:', error.message);
+                console.log(`📖 讀取到 ${recentDiaries.length} 筆最近日記`);
+            } catch (error) {
+                console.log('⚠️ 無法讀取歷史日記，將使用預設引導語:', error.message);
+            }
         }
 
         // 組合 prompt
@@ -144,8 +150,17 @@ ${summaries}
 
         res.status(200).json({ guideText, basedOnDiaries: recentDiaries.length });
     } catch (error) {
-        console.error('生成引導語時發生錯誤:', error);
-        res.status(500).json({ error: error.message });
+        console.error('❌ 生成引導語時發生錯誤:', error);
+        console.error('❌ 錯誤詳情:', {
+            message: error.message,
+            stack: error.stack,
+            hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+            hasFirebase: !!db
+        });
+        res.status(500).json({ 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 }
 
