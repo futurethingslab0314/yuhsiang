@@ -92,7 +92,6 @@ const server = http.createServer(async (req, res) => {
           json: (data) => {
             if (!responseSent) {
               res.setHeader('Content-Type', 'application/json');
-程序设计
               res.end(JSON.stringify(data));
               responseSent = true;
             }
