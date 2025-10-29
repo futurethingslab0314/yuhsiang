@@ -623,14 +623,18 @@
                 const resp = await fetch('/api/generate-guide', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date: new Date().toISOString().slice(0,10) })
+                    body: JSON.stringify({ 
+                        userId: 'default-user',
+                        date: new Date().toISOString().slice(0,10),
+                        daysToAnalyze: 7
+                    })
                 });
                 if (!resp.ok) throw new Error('API 失敗');
                 const data = await resp.json();
                 const text = (data.guideText || '').trim();
                 AppState.currentGuideText = text;
                 guideTextEl.textContent = text || '今晚想對自己說些什麼？';
-                console.log('📝 顯示引導語(From API):', text);
+                console.log(`📝 顯示引導語(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, text);
             } catch (e) {
                 console.error('取得引導語失敗，改用預設樣本：', e);
                 const fallback = '今晚想對自己說些什麼？';
@@ -647,60 +651,132 @@
         // ====================================
         // 錄音處理
         // ====================================
-        function handleRecordingStart() {
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioStream;
+        let recordingStartTime;
+
+        async function handleRecordingStart() {
             if (AppState.isRecording) return;
             
-            AppState.isRecording = true;
-            AppState.currentState = SystemState.RECORDING;
-            
-            // 更新 UI
-            document.getElementById('voiceIndicator').classList.add('active');
-            // 錄音期間維持顯示引導層（不隱藏）
-            
-            // TODO: 開始錄音
-            console.log('🎤 開始錄音...');
-            
-            // 模擬音效
-            playSound('start');
-            
-            updateDebugInfo();
+            try {
+                // 請求麥克風權限
+                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        sampleRate: 44100
+                    } 
+                });
+                
+                // 建立 MediaRecorder
+                mediaRecorder = new MediaRecorder(audioStream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                audioChunks = [];
+                recordingStartTime = Date.now();
+                
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+                
+                mediaRecorder.start();
+                
+                AppState.isRecording = true;
+                AppState.currentState = SystemState.RECORDING;
+                
+                // 更新 UI
+                document.getElementById('voiceIndicator').classList.add('active');
+                
+                console.log('🎤 開始錄音...');
+                playSound('start');
+                updateDebugInfo();
+                
+            } catch (error) {
+                console.error('❌ 無法存取麥克風:', error);
+                alert('無法存取麥克風，請檢查權限設定');
+            }
         }
 
-        function handleRecordingEnd() {
-            if (!AppState.isRecording) return;
+        async function handleRecordingEnd() {
+            if (!AppState.isRecording || !mediaRecorder) return;
             
             AppState.isRecording = false;
             AppState.currentState = SystemState.PROCESSING;
             
             // 更新 UI
             document.getElementById('voiceIndicator').classList.remove('active');
-            // 錄音結束：關閉滿版引導層
             hideGuideMessage();
             
-            // TODO: 停止錄音並上傳
             console.log('⏹️ 停止錄音，開始處理...');
-            
-            // 模擬音效
             playSound('end');
             
-            // 處理錄音並獎勵
-            processRecording();
+            // 停止錄音
+            mediaRecorder.stop();
+            
+            // 等待錄音數據就緒
+            mediaRecorder.addEventListener('stop', async () => {
+                const recordingDuration = Math.round((Date.now() - recordingStartTime) / 1000);
+                
+                // 建立音訊 Blob
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                
+                // 停止音訊串流
+                audioStream.getTracks().forEach(track => track.stop());
+                
+                // 處理錄音
+                await processRecording(audioBlob, recordingDuration);
+            });
             
             updateDebugInfo();
         }
 
-        function processRecording() {
-            // TODO: 上傳到 Firebase
-            // TODO: 更新 Firestore 記錄
-            
-            console.log('📤 上傳錄音到 Firebase...');
-            
-            // 模擬處理延遲
-            setTimeout(() => {
+        async function processRecording(audioBlob, duration) {
+            try {
+                console.log('📤 上傳日記到伺服器...');
+                
+                // 將音訊轉為 base64（簡化方案，實際可上傳至 Firebase Storage）
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                
+                reader.onloadend = async () => {
+                    const audioData = reader.result;
+                    
+                    // 上傳到後端
+                    const response = await fetch('/api/save-diary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: 'default-user', // 可從環境變數或登入狀態取得
+                            content: `語音日記 (${duration}秒)`,
+                            mode: 'audio',
+                            audioUrl: null, // 實際應上傳到 Storage 並儲存 URL
+                            duration: duration,
+                            date: new Date().toISOString()
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('儲存日記失敗');
+                    }
+                    
+                    const data = await response.json();
+                    console.log('✅ 日記已儲存:', data);
+                    
+                    // 給予獎勵
+                    AppState.currentState = SystemState.REWARD;
+                    giveReward();
+                    updateDebugInfo();
+                };
+                
+            } catch (error) {
+                console.error('❌ 處理錄音失敗:', error);
+                // 即使失敗也給予獎勵（使用者體驗優先）
                 AppState.currentState = SystemState.REWARD;
                 giveReward();
                 updateDebugInfo();
-            }, 500);
+            }
         }
 
         // ====================================
@@ -779,12 +855,18 @@
                 const resp = await fetch('/api/generate-print', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date: new Date().toISOString().slice(0,10) })
+                    body: JSON.stringify({ 
+                        userId: 'default-user',
+                        totalCoins: AppState.totalCoins,
+                        date: new Date().toISOString().slice(0,10),
+                        daysToAnalyze: 10
+                    })
                 });
                 if (!resp.ok) throw new Error('API 失敗');
                 const data = await resp.json();
                 const printText = (data.printText || '').trim();
-                console.log('📄 列印內容(From API):', printText);
+                console.log(`📄 列印內容(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, printText);
+                console.log(`💰 統計: ${data.totalCoins || 0} 枚金幣`);
                 // TODO: 將 printText 送往實體印表機
             } catch (e) {
                 console.error('生成列印內容失敗：', e);
