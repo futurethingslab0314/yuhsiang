@@ -58,34 +58,81 @@ const server = http.createServer(async (req, res) => {
         }
 
         const handler = handlerModule.default;
+        
+        // 解析請求 body
+        let requestBody = {};
+        if (body) {
+          try {
+            requestBody = JSON.parse(body);
+          } catch (e) {
+            console.log('⚠️ Body 解析失敗，使用空物件');
+          }
+        }
+        
         const mockReq = {
           method: req.method,
-          body: body ? JSON.parse(body) : {},
+          body: requestBody,
           headers: req.headers
         };
+        
+        let responseSent = false;
         const mockRes = {
           statusCode: 200,
           headers: {},
-          setHeader: (key, value) => { res.setHeader(key, value); },
+          setHeader: (key, value) => { 
+            if (!responseSent) res.setHeader(key, value); 
+          },
           writeHead: (code, headers) => {
-            res.writeHead(code, headers || {});
+            if (!responseSent) {
+              res.writeHead(code, headers || {});
+              mockRes.statusCode = code;
+              responseSent = true;
+            }
           },
           json: (data) => {
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(data));
+            if (!responseSent) {
+              res.setHeader('Content-Type', 'application/json');
+程序设计
+              res.end(JSON.stringify(data));
+              responseSent = true;
+            }
           },
           status: (code) => {
             mockRes.statusCode = code;
             return mockRes;
           },
-          end: (data) => res.end(data),
-          send: (data) => res.end(data)
+          end: (data) => {
+            if (!responseSent) {
+              res.end(data);
+              responseSent = true;
+            }
+          },
+          send: (data) => {
+            if (!responseSent) {
+              res.end(data);
+              responseSent = true;
+            }
+          }
         };
+        
         await handler(mockReq, mockRes);
+        
+        // 如果 handler 沒有發送回應
+        if (!responseSent) {
+          res.writeHead(mockRes.statusCode || 200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: 'No response from handler' }));
+        }
+        
       } catch (error) {
-        console.error('API 錯誤:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: error.message }));
+        console.error('❌ API 錯誤:', error.message);
+        console.error('❌ 完整錯誤:', error);
+        if (!responseSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            error: error.message,
+            stack: error.stack
+          }));
+        }
       }
     });
     return;
