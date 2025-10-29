@@ -43,21 +43,19 @@ const server = http.createServer(async (req, res) => {
     req.on('data', chunk => { body += chunk.toString(); });
     req.on('end', async () => {
       try {
-        // 動態 import ES6 模組
-        let handlerModule;
+        // 載入 CommonJS 模組
+        let handler;
         if (pathname === '/api/generate-guide') {
-          handlerModule = await import('./api/generate-guide/index.js');
+          handler = require('./api/generate-guide/index.js');
         } else if (pathname === '/api/generate-print') {
-          handlerModule = await import('./api/generate-print/index.js');
+          handler = require('./api/generate-print/index.js');
         } else if (pathname === '/api/save-diary') {
-          handlerModule = await import('./api/save-diary/index.js');
+          handler = require('./api/save-diary/index.js');
         } else {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'API not found' }));
           return;
         }
-
-        const handler = handlerModule.default;
         
         // 解析請求 body
         let requestBody = {};

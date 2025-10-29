@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
-import admin from 'firebase-admin';
+const OpenAI = require('openai');
+const admin = require('firebase-admin');
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
@@ -17,7 +17,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // 設置 CORS 標頭
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
