@@ -285,6 +285,14 @@
 
     <script>
         // ====================================
+        // API 基礎路徑設定
+        // ====================================
+        // 自動判斷是否在 Vercel 部署環境，或使用本地環境
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000'  // 本地開發環境
+            : '';  // 線上環境使用相對路徑（同域名）
+
+        // ====================================
         // 硬幣類別
         // ====================================
         class Coin {
@@ -620,7 +628,7 @@
                 guideTextEl.textContent = '生成引導語中…';
                 guideMessageEl.classList.add('show');
 
-                const resp = await fetch('/api/generate-guide', {
+                const resp = await fetch(`${API_BASE_URL}/api/generate-guide`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -744,7 +752,7 @@
                     const audioData = reader.result;
                     
                     // 上傳到後端
-                    const response = await fetch('/api/save-diary', {
+                    const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -852,7 +860,7 @@
         async function executePrint() {
             try {
                 console.log('🖨️ 執行列印程序...');
-                const resp = await fetch('/api/generate-print', {
+                const resp = await fetch(`${API_BASE_URL}/api/generate-print`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 

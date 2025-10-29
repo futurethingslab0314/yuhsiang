@@ -14,49 +14,24 @@ if [ ! -f "diary-reward.html" ]; then
     exit 1
 fi
 
-# 檢查 Python 是否安裝
-if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
-    echo "❌ 錯誤：找不到 Python"
-    echo "請先安裝 Python 3"
+# 檢查 Node.js 是否安裝
+if ! command -v node &> /dev/null; then
+    echo "❌ 錯誤：找不到 Node.js"
+    echo "請先安裝 Node.js 18 或更新版本"
     exit 1
 fi
 
-# 選擇 Python 指令
-PYTHON_CMD="python3"
-if ! command -v python3 &> /dev/null; then
-    PYTHON_CMD="python"
-fi
-
-echo "✅ Python 已找到: $PYTHON_CMD"
+echo "✅ Node.js 已找到: $(node -v)"
 echo ""
-
-# 選擇端口
-PORT=8000
-
-# 檢查端口是否被佔用
-if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    echo "⚠️ 警告：端口 $PORT 已被使用"
-    echo "嘗試使用端口 8001..."
-    PORT=8001
-fi
 
 # 顯示啟動訊息
 echo "================================================"
 echo "  📝 每日日記獎勵系統"
 echo "================================================"
 echo ""
-echo "伺服器位址："
-echo "  🌐 http://localhost:$PORT/diary-reward.html"
-echo "  🌐 http://127.0.0.1:$PORT/diary-reward.html"
+echo "伺服器位址（啟動後會顯示）："
+echo "  🌐 http://localhost:3000/diary-reward.html"
 echo ""
-
-# 如果在 Raspberry Pi 上，顯示區域網路 IP
-if [ -f /proc/device-tree/model ] && grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
-    LOCAL_IP=$(hostname -I | awk '{print $1}')
-    echo "📱 區域網路訪問："
-    echo "  🌐 http://$LOCAL_IP:$PORT/diary-reward.html"
-    echo ""
-fi
 
 echo "💡 提示："
 echo "  - 按 Ctrl+C 停止伺服器"
@@ -73,7 +48,7 @@ sleep 2
 echo "🔍 嘗試開啟瀏覽器..."
 
 # 定義 URL
-URL="http://localhost:$PORT/diary-reward.html"
+URL="http://localhost:3000/diary-reward.html"
 
 # 根據作業系統開啟瀏覽器
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -100,11 +75,13 @@ else
 fi
 
 echo ""
-echo "🔄 啟動本地伺服器..."
+echo "🔄 啟動開發伺服器（使用 Vercel）..."
+echo ""
+echo "⚠️ 注意：此系統需要 Vercel 來運行 API"
 echo ""
 
-# 啟動 Python HTTP 伺服器
-$PYTHON_CMD -m http.server $PORT
+# 啟動 Vercel dev
+npx vercel dev
 
 # 如果伺服器停止
 echo ""
