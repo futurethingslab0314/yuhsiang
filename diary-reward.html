@@ -287,10 +287,21 @@
         // ====================================
         // API 基礎路徑設定
         // ====================================
-        // 自動判斷是否在 Vercel 部署環境，或使用本地環境
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:3000'  // 本地開發環境
-            : '';  // 線上環境使用相對路徑（同域名）
+        // 自動判斷環境：
+        // - file:// 協議 → 使用線上 Vercel API
+        // - localhost → 使用本地 API
+        // - 線上環境 → 使用相對路徑（同域名）
+        let API_BASE_URL = '';
+        if (window.location.protocol === 'file:') {
+            // 如果是 file:// 打開，使用線上 API
+            API_BASE_URL = 'https://yuhsiang.vercel.app';
+        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // 本地開發環境
+            API_BASE_URL = 'http://localhost:3000';
+        } else {
+            // 線上環境使用相對路徑（同域名）
+            API_BASE_URL = '';
+        }
 
         // ====================================
         // 硬幣類別
