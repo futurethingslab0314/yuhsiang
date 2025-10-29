@@ -1,7 +1,6 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 
 // 手動載入 .env 檔案
 const envFile = path.join(__dirname, '.env');
@@ -19,12 +18,8 @@ if (fs.existsSync(envFile)) {
 
 const PORT = 3000;
 
-// 簡單路由
-const routes = {
-  '/api/generate-guide': require('./api/generate-guide/index.js'),
-  '/api/generate-print': require('./api/generate-print/index.js'),
-  '/api/save-diary': require('./api/save-diary/index.js'),
-};
+// API 路由將動態載入
+const routes = {};
 
 const server = http.createServer(async (req, res) => {
   // 設置 CORS
@@ -42,13 +37,27 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
-  // API 路由
-  if (routes[pathname]) {
+  // API 路由 - 動態載入 ES6 模組
+  if (pathname.startsWith('/api/')) {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
     req.on('end', async () => {
       try {
-        const handler = routes[pathname];
+        // 動態 import ES6 模組
+        let handlerModule;
+        if (pathname === '/api/generate-guide') {
+          handlerModule = await import('./api/generate-guide/index.js');
+        } else if (pathname === '/api/generate-print') {
+          handlerModule = await import('./api/generate-print/index.js');
+        } else if (pathname === '/api/save-diary') {
+          handlerModule = await import('./api/save-diary/index.js');
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'API not found' }));
+          return;
+        }
+
+        const handler = handlerModule.default;
         const mockReq = {
           method: req.method,
           body: body ? JSON.parse(body) : {},
@@ -72,7 +81,7 @@ const server = http.createServer(async (req, res) => {
           end: (data) => res.end(data),
           send: (data) => res.end(data)
         };
-        await handler.default(mockReq, mockRes);
+        await handler(mockReq, mockRes);
       } catch (error) {
         console.error('API 錯誤:', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
