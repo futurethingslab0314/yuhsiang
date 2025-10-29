@@ -2,20 +2,39 @@ import OpenAI from 'openai';
 import admin from 'firebase-admin';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
-if (!admin.apps.length) {
-    const serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    };
+let db = null;
+if (!admin.apps.length && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    try {
+        // 處理私鑰格式 - 支援多種格式
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        // 如果包含 \n 字串，替換為實際換行
+        privateKey = privateKey.replace(/\\n/g, '\n');
+        // 如果沒有換行符，嘗試從 -----BEGIN 和 -----END 之間智能添加
+        if (!privateKey.includes('\n') && privateKey.includes('-----BEGIN')) {
+            privateKey = privateKey
+                .replace(/-----BEGIN PRIVATE KEY-----/, '-----BEGIN PRIVATE KEY-----\n')
+                .replace(/-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----');
+        }
 
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID,
-    });
+        const serviceAccount = {
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: privateKey,
+        };
+
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: process.env.FIREBASE_PROJECT_ID,
+        });
+        db = admin.firestore();
+        console.log('✅ Firebase Admin 初始化成功');
+    } catch (error) {
+        console.warn('⚠️ Firebase Admin 初始化失敗，將繼續使用 OpenAI 但無法讀取歷史日記:', error.message);
+        db = null;
+    }
+} else {
+    console.warn('⚠️ Firebase 環境變數未設定，將繼續使用 OpenAI 但無法讀取歷史日記');
 }
-
-const db = admin.firestore();
 
 export default async function handler(req, res) {
     // 設置 CORS 標頭
@@ -45,14 +64,15 @@ export default async function handler(req, res) {
 
         // 讀取使用者最近 N 天的日記內容
         let recentDiaries = [];
-        try {
-            const diariesSnapshot = await db
-                .collection('users')
-                .doc(userId)
-                .collection('diaries')
-                .orderBy('date', 'desc')
-                .limit(daysToAnalyze)
-                .get();
+        if (db) {
+            try {
+                const diariesSnapshot = await db
+                    .collection('users')
+                    .doc(userId)
+                    .collection('diaries')
+                    .orderBy('date', 'desc')
+                    .limit(daysToAnalyze)
+                    .get();
 
             recentDiaries = diariesSnapshot.docs.map(doc => {
                 const data = doc.data();
@@ -103,21 +123,23 @@ ${summaries}
         }
 
         // 可選：將生成的引導語儲存到 Firestore
-        try {
-            const dateString = new Date().toISOString().slice(0, 10);
-            await db
-                .collection('users')
-                .doc(userId)
-                .collection('guides')
-                .doc(dateString)
-                .set({
-                    guideText,
-                    generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    basedOnDiaries: recentDiaries.length
-                });
-            console.log('✅ 引導語已儲存到 Firestore');
-        } catch (error) {
-            console.log('⚠️ 無法儲存引導語:', error.message);
+        if (db) {
+            try {
+                const dateString = new Date().toISOString().slice(0, 10);
+                await db
+                    .collection('users')
+                    .doc(userId)
+                    .collection('guides')
+                    .doc(dateString)
+                    .set({
+                        guideText,
+                        generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        basedOnDiaries: recentDiaries.length
+                    });
+                console.log('✅ 引導語已儲存到 Firestore');
+            } catch (error) {
+                console.log('⚠️ 無法儲存引導語:', error.message);
+            }
         }
 
         res.status(200).json({ guideText, basedOnDiaries: recentDiaries.length });
