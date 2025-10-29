@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+import admin from 'firebase-admin';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // 設定 CORS 標頭
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
