@@ -1,4 +1,6 @@
 import admin from 'firebase-admin';
+import OpenAI from 'openai';
+import { toFile } from 'openai/uploads';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
@@ -36,18 +38,44 @@ export default async function handler(req, res) {
     try {
         const {
             userId = 'default-user',
-            content,
-            mode = 'text',       // 'text' 或 'audio'
-            audioUrl = null,
+            content,               // 純文字（若前端已做轉寫）
+            audioBase64,           // 前端傳來的 base64 音訊（dataURL 或純 base64 皆可）
+            mode = 'text',         // 'text' | 'audio' | 'stt'
             duration = 0,
             date = new Date().toISOString()
-        } = req.body;
+        } = req.body || {};
 
-        // 驗證必要欄位
-        if (!content && !audioUrl) {
+        let finalContent = content || '';
+
+        // 若有音訊，先用 OpenAI 轉文字
+        if (!finalContent && audioBase64) {
+            if (!process.env.OPENAI_API_KEY) {
+                throw new Error('OPENAI_API_KEY 未設定，無法進行語音轉文字');
+            }
+
+            const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+            // 去除 dataURL 前綴
+            const base64String = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64;
+            const buffer = Buffer.from(base64String, 'base64');
+
+            // 嘗試使用 webm 做檔名與 MIME
+            const file = await toFile(buffer, 'audio.webm', { type: 'audio/webm' });
+
+            // 使用 Whisper 轉寫
+            const transcript = await openai.audio.transcriptions.create({
+                file,
+                model: 'whisper-1',
+                // 可選：language: 'zh'
+            });
+            finalContent = (transcript.text || '').trim();
+        }
+
+        // 驗證：至少要有文字內容
+        if (!finalContent) {
             return res.status(400).json({
                 success: false,
-                error: '必須提供 content 或 audioUrl'
+                error: '缺少可儲存的內容（content 或 audioBase64）'
             });
         }
 
@@ -62,9 +90,9 @@ export default async function handler(req, res) {
             userId,
             date: admin.firestore.Timestamp.fromDate(new Date(date)),
             dateString,
-            content: content || '',
-            mode,
-            audioUrl,
+            content: finalContent,
+            mode: audioBase64 ? 'stt' : mode,
+            audioUrl: null,
             duration,
             coins: coinsEarned,
             processed: true,

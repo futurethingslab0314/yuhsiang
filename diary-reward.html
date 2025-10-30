@@ -760,17 +760,16 @@
                 reader.readAsDataURL(audioBlob);
                 
                 reader.onloadend = async () => {
-                    const audioData = reader.result;
+                    const audioData = reader.result; // dataURL base64
                     
-                    // 上傳到後端
+                    // 上傳到後端（由後端進行語音轉文字）
                     const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            userId: 'default-user', // 可從環境變數或登入狀態取得
-                            content: `語音日記 (${duration}秒)`,
-                            mode: 'audio',
-                            audioUrl: null, // 實際應上傳到 Storage 並儲存 URL
+                            userId: 'default-user',
+                            mode: 'stt',
+                            audioBase64: audioData,
                             duration: duration,
                             date: new Date().toISOString()
                         })
