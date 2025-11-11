@@ -762,30 +762,33 @@
                 reader.onloadend = async () => {
                     const audioData = reader.result; // dataURL base64
                     
-                    // 上傳到後端（由後端進行語音轉文字）
-                    const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: 'default-user',
-                            mode: 'stt',
-                            audioBase64: audioData,
-                            duration: duration,
-                            date: new Date().toISOString()
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('儲存日記失敗');
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: 'default-user',
+                                mode: 'stt',
+                                audioBase64: audioData,
+                                duration: duration,
+                                date: new Date().toISOString()
+                            })
+                        });
+                        
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw new Error(data?.error || '儲存日記失敗');
+                        }
+                        
+                        console.log('✅ 日記已儲存:', data);
+                    } catch (error) {
+                        console.error('❌ 儲存日記失敗:', error);
+                    } finally {
+                        // 即使儲存失敗，也給予獎勵，避免中斷體驗
+                        AppState.currentState = SystemState.REWARD;
+                        giveReward();
+                        updateDebugInfo();
                     }
-                    
-                    const data = await response.json();
-                    console.log('✅ 日記已儲存:', data);
-                    
-                    // 給予獎勵
-                    AppState.currentState = SystemState.REWARD;
-                    giveReward();
-                    updateDebugInfo();
                 };
                 
             } catch (error) {
