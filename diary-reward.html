@@ -258,39 +258,35 @@
         }
 
         .fullscreen-prompt-content {
-            width: 90%;
-            max-width: 800px;
-            aspect-ratio: 16/9;
-            background-color: #1a1a1a;
-            border: 2px solid #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            padding: 60px 40px;
+            width: 100%;
+            height: 100%;
+            gap: 0;
         }
 
         .fullscreen-prompt-title {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 60px;
+            margin-bottom: 15vh;
         }
 
         .fullscreen-prompt-title h2 {
-            font-size: 72px;
+            font-size: clamp(48px, 8vw, 120px);
             font-weight: bold;
             color: #FFD700;
             margin: 0;
-            line-height: 1.2;
-            letter-spacing: 4px;
+            line-height: 1.1;
+            letter-spacing: clamp(2px, 0.5vw, 8px);
             font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
         }
 
         .fullscreen-prompt-btn {
-            width: 100px;
-            height: 100px;
+            width: clamp(80px, 12vw, 150px);
+            height: clamp(80px, 12vw, 150px);
             border-radius: 50%;
             background-color: #FFD700;
             border: none;
@@ -299,8 +295,9 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            margin-bottom: 40px;
+            margin-bottom: 12vh;
             padding: 0;
+            flex-shrink: 0;
         }
 
         .fullscreen-prompt-btn:hover {
@@ -316,18 +313,20 @@
             content: '';
             width: 0;
             height: 0;
-            border-left: 30px solid #000000;
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            margin-left: 8px;
+            border-left: clamp(20px, 3vw, 40px) solid #000000;
+            border-top: clamp(14px, 2vw, 28px) solid transparent;
+            border-bottom: clamp(14px, 2vw, 28px) solid transparent;
+            margin-left: clamp(4px, 0.5vw, 8px);
         }
 
         .fullscreen-prompt-subtitle {
             color: #ffffff;
-            font-size: 20px;
+            font-size: clamp(16px, 2.5vw, 32px);
             text-align: center;
             font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            letter-spacing: 1px;
+            letter-spacing: clamp(0.5px, 0.1vw, 2px);
+            position: absolute;
+            bottom: 10vh;
         }
 
         @media (max-width: 1080px) {
@@ -422,8 +421,8 @@
                     <h2>SYSTEM</h2>
                 </div>
                 <button class="fullscreen-prompt-btn" id="enterFullscreenBtn" title="進入全螢幕"></button>
-                <div class="fullscreen-prompt-subtitle">收集生活中的小小碎片</div>
             </div>
+            <div class="fullscreen-prompt-subtitle">收集生活中的小小碎片</div>
         </div>
     </div>
 
