@@ -201,6 +201,44 @@
             display: block;
         }
 
+        /* 退出全螢幕按鈕 */
+        .exit-fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: monospace;
+        }
+
+        .exit-fullscreen-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .exit-fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 全螢幕時顯示退出按鈕 */
+        :fullscreen .exit-fullscreen-btn,
+        :-webkit-full-screen .exit-fullscreen-btn,
+        :-moz-full-screen .exit-fullscreen-btn,
+        :-ms-fullscreen .exit-fullscreen-btn {
+            display: flex;
+        }
+
         @media (max-width: 1080px) {
             .canvas-container {
                 width: 100vw;
@@ -281,6 +319,9 @@
                 <div>錄音: <span id="debugRecording">否</span></div>
             </div>
         </div>
+
+        <!-- 退出全螢幕按鈕 -->
+        <button class="exit-fullscreen-btn" id="exitFullscreenBtn" title="退出全螢幕 (ESC)">✕</button>
     </div>
 
     <script>
@@ -395,6 +436,9 @@
             
             // 設定 Console 測試指令
             setupConsoleCommands();
+            
+            // 設定全螢幕功能
+            setupFullscreen();
             
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
@@ -561,20 +605,89 @@
         // 設定語音指示器
         function setupVoiceIndicator() {
             const voiceIndicator = document.getElementById('voiceIndicator');
+            let clickTimer = null;
+            let isLongPress = false;
+            let hasMoved = false;
             
-            voiceIndicator.addEventListener('pointerdown', function() {
-                handleRecordingStart();
+            // 單擊切換全螢幕
+            voiceIndicator.addEventListener('click', function(e) {
+                // 只有在不是長按且沒有移動時才切換全螢幕
+                if (!isLongPress && !hasMoved) {
+                    toggleFullscreen();
+                }
+            });
+            
+            // 長按開始錄音
+            voiceIndicator.addEventListener('pointerdown', function(e) {
+                isLongPress = false;
+                hasMoved = false;
+                clickTimer = setTimeout(() => {
+                    isLongPress = true;
+                    handleRecordingStart();
+                }, 500); // 500ms 後視為長按
+            });
+            
+            // 偵測移動（如果移動了就不算點擊）
+            voiceIndicator.addEventListener('pointermove', function(e) {
+                if (clickTimer) {
+                    hasMoved = true;
+                }
             });
             
             voiceIndicator.addEventListener('pointerup', function() {
-                handleRecordingEnd();
-            });
-            
-            voiceIndicator.addEventListener('pointerleave', function() {
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                }
                 if (AppState.isRecording) {
                     handleRecordingEnd();
                 }
+                // 重置狀態
+                setTimeout(() => {
+                    isLongPress = false;
+                    hasMoved = false;
+                }, 100);
             });
+            
+            voiceIndicator.addEventListener('pointerleave', function() {
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                }
+                if (AppState.isRecording) {
+                    handleRecordingEnd();
+                }
+                // 重置狀態
+                setTimeout(() => {
+                    isLongPress = false;
+                    hasMoved = false;
+                }, 100);
+            });
+        }
+
+        // 全螢幕切換功能
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // 進入全螢幕
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+                console.log('🖥️ 進入全螢幕模式');
+            } else {
+                // 退出全螢幕
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                console.log('🖥️ 退出全螢幕模式');
+            }
         }
 
         // ====================================
@@ -929,6 +1042,98 @@
         }
 
         // ====================================
+        // 全螢幕功能
+        // ====================================
+        function setupFullscreen() {
+            const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+            const container = document.querySelector('.container');
+            
+            // 進入全螢幕的函數
+            async function enterFullscreen() {
+                try {
+                    if (container.requestFullscreen) {
+                        await container.requestFullscreen();
+                    } else if (container.webkitRequestFullscreen) {
+                        await container.webkitRequestFullscreen();
+                    } else if (container.mozRequestFullScreen) {
+                        await container.mozRequestFullScreen();
+                    } else if (container.msRequestFullscreen) {
+                        await container.msRequestFullscreen();
+                    }
+                    console.log('✅ 已進入全螢幕模式');
+                } catch (error) {
+                    console.error('❌ 無法進入全螢幕:', error);
+                }
+            }
+            
+            // 退出全螢幕的函數
+            async function exitFullscreen() {
+                try {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        await document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        await document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        await document.msExitFullscreen();
+                    }
+                    console.log('✅ 已退出全螢幕模式');
+                } catch (error) {
+                    console.error('❌ 無法退出全螢幕:', error);
+                }
+            }
+            
+            // 檢查是否在全螢幕模式
+            function isFullscreen() {
+                return !!(document.fullscreenElement || 
+                         document.webkitFullscreenElement || 
+                         document.mozFullScreenElement || 
+                         document.msFullscreenElement);
+            }
+            
+            // 點擊退出按鈕
+            exitFullscreenBtn.addEventListener('click', exitFullscreen);
+            
+            // 監聽全螢幕狀態變化
+            document.addEventListener('fullscreenchange', updateFullscreenButton);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+            document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+            document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+            
+            function updateFullscreenButton() {
+                // 按鈕會透過 CSS 自動顯示/隱藏
+                console.log('全螢幕狀態:', isFullscreen() ? '開啟' : '關閉');
+            }
+            
+            // ESC 鍵退出全螢幕（瀏覽器預設行為，但我們也可以監聽）
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && isFullscreen()) {
+                    exitFullscreen();
+                }
+                // F11 鍵切換全螢幕
+                if (e.key === 'F11') {
+                    e.preventDefault();
+                    if (isFullscreen()) {
+                        exitFullscreen();
+                    } else {
+                        enterFullscreen();
+                    }
+                }
+            });
+            
+            // 頁面載入後自動進入全螢幕（延遲 1 秒，讓使用者看到頁面）
+            setTimeout(() => {
+                enterFullscreen();
+            }, 1000);
+            
+            // 暴露給 Console 使用
+            window.enterFullscreen = enterFullscreen;
+            window.exitFullscreen = exitFullscreen;
+            window.isFullscreen = isFullscreen;
+        }
+
+        // ====================================
         // Console 測試指令
         // ====================================
         function setupConsoleCommands() {
@@ -954,6 +1159,8 @@
 ║ enableGuide(b)   - 啟用/關閉排程（true/false） ║
 ║ checkGuideNow()  - 立即檢查是否要顯示引導語    ║
 ║ resetGuideToday()- 清除今日已顯示記錄          ║
+║ enterFullscreen()- 進入全螢幕模式              ║
+║ exitFullscreen() - 退出全螢幕模式              ║
 ╚════════════════════════════════════════════════╝
                 `);
             };
@@ -1050,6 +1257,32 @@
                 AppState.lastGuideShownDate = null;
                 saveGuideScheduleToStorage();
                 console.log('🔄 已清除今日引導語顯示記錄');
+            };
+
+            // 全螢幕相關指令
+            window.enterFullscreen = function() {
+                const container = document.querySelector('.container');
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+            };
+
+            window.exitFullscreen = function() {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
             };
         }
 
