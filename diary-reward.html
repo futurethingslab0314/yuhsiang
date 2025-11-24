@@ -116,6 +116,13 @@
             animation-delay: 0.5s;
         }
 
+        /* 英文版本：更小的字級和行距 */
+        .guide-message .guide-text.lang-en {
+            font-size: 24px;
+            line-height: 1.4;
+            letter-spacing: 0.02em;
+        }
+
         .guide-message .guide-hint {
             /* 隱藏舊的提示文字，由麥克風圖示取代 */
             display: none;
@@ -152,6 +159,14 @@
         .mic-container.idle .pixel-mic-icon {
             animation: pulse-mic 3s infinite ease-in-out;
             opacity: 0.7;
+            fill: #000000; /* 黑色 */
+        }
+
+        /* 錄音狀態：麥克風反白 */
+        .mic-container.recording .pixel-mic-icon {
+            fill: #ffffff; /* 白色 */
+            opacity: 1;
+            animation: none; /* 停止呼吸動畫 */
         }
 
         /* 錄音狀態：聲波動畫容器 */
@@ -310,8 +325,8 @@
             right: 40px;
             padding: 8px 16px;
             background-color: transparent;
-            border: 2px solid #000000;
-            color: #000000;
+            border: 2px solid #ffffff;
+            color: #ffffff;
             font-family: 'Courier New', monospace;
             font-size: 16px;
             font-weight: bold;
@@ -322,11 +337,21 @@
         }
 
         .lang-toggle-btn:hover {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             opacity: 1;
         }
 
-        /* 針對暗色背景的適配 */
+        /* 針對引導語頁面（暖黃色背景）的適配 */
+        .guide-message .lang-toggle-btn {
+            border-color: #000000;
+            color: #000000;
+        }
+
+        .guide-message .lang-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 針對列印通知頁面（暗色背景）的適配 */
         .print-notification .lang-toggle-btn {
             border-color: #e6e0d5;
             color: #e6e0d5;
@@ -488,9 +513,6 @@
             
             <!-- 引導語顯示 -->
             <div class="guide-message" id="guideMessage">
-                <!-- 語言切換按鈕 -->
-                <button class="lang-toggle-btn" id="langToggleBtn">EN / 中</button>
-                
                 <div class="guide-text" id="guideText"></div>
                 
                 <!-- 新的麥克風互動區 -->
@@ -540,6 +562,9 @@
 
         <!-- 進入全螢幕提示 -->
         <div class="fullscreen-prompt" id="fullscreenPrompt">
+            <!-- 語言切換按鈕 -->
+            <button class="lang-toggle-btn" id="langToggleBtn">EN / 中</button>
+            
             <div class="fullscreen-prompt-content">
                 <div class="fullscreen-prompt-title">
                     <h2>DIARY</h2>
@@ -547,7 +572,7 @@
                 </div>
                 <button class="fullscreen-prompt-btn" id="enterFullscreenBtn" title="進入全螢幕"></button>
             </div>
-            <div class="fullscreen-prompt-subtitle">收集生活中的小小碎片</div>
+            <div class="fullscreen-prompt-subtitle" id="splashSubtitle">收集生活中的小小碎片</div>
         </div>
     </div>
 
@@ -639,7 +664,8 @@
                 printMessage: '正在將你的話語<br>化為實體...',
                 printNotification: '已累積 ${coins} 枚金幣！<br>正在列印你的專屬紙籤...',
                 printNotificationTitle: '恭喜你！',
-                langBtn: 'EN'
+                langBtn: 'EN',
+                splashSubtitle: '收集生活中的小小碎片'
             },
             'en-US': {
                 guideLoading: 'Generating guide...',
@@ -653,7 +679,8 @@
                 printMessage: 'Turning your words<br>into reality...',
                 printNotification: 'Collected ${coins} coins!<br>Printing your paper slip...',
                 printNotificationTitle: 'Congratulations!',
-                langBtn: '中'
+                langBtn: '中',
+                splashSubtitle: 'Collect small fragments of life'
             }
         };
 
@@ -696,6 +723,7 @@
             micContainerEl = document.getElementById('micContainer');
             micRipplesEl = document.getElementById('micRipples');
             langToggleBtnEl = document.getElementById('langToggleBtn');
+            const splashSubtitleEl = document.getElementById('splashSubtitle');
             
             // 設定語言切換互動
             setupLanguageToggle();
@@ -743,6 +771,19 @@
         function updateInterfaceText() {
             const t = i18n[AppState.language];
             langToggleBtnEl.textContent = t.langBtn;
+            
+            // 更新初始畫面副標題
+            const splashSubtitleEl = document.getElementById('splashSubtitle');
+            if (splashSubtitleEl) {
+                splashSubtitleEl.textContent = t.splashSubtitle;
+            }
+            
+            // 更新引導語文字的語言類別（用於樣式調整）
+            if (AppState.language === 'en-US') {
+                guideTextEl.classList.add('lang-en');
+            } else {
+                guideTextEl.classList.remove('lang-en');
+            }
             
             // 更新列印相關文字 (如果在列印狀態)
             if (AppState.currentState === SystemState.PRINT_READY) {
@@ -1038,6 +1079,13 @@
                 AppState.currentGuideText = text;
                 guideTextEl.textContent = text || t.guideFallback;
                 
+                // 設置語言類別（用於樣式調整）
+                if (AppState.language === 'en-US') {
+                    guideTextEl.classList.add('lang-en');
+                } else {
+                    guideTextEl.classList.remove('lang-en');
+                }
+                
                 // 重置動畫（重新觸發呼吸動畫）
                 guideTextEl.style.animation = 'none';
                 void guideTextEl.offsetWidth; // 強制重排
@@ -1051,6 +1099,14 @@
                 const fallback = t.guideFallback;
                 AppState.currentGuideText = fallback;
                 guideTextEl.textContent = fallback;
+                
+                // 設置語言類別（用於樣式調整）
+                if (AppState.language === 'en-US') {
+                    guideTextEl.classList.add('lang-en');
+                } else {
+                    guideTextEl.classList.remove('lang-en');
+                }
+                
                 guideMessageEl.classList.add('show');
             }
         }
@@ -1188,10 +1244,9 @@
                 rippleInterval = null;
             }
             
-            // 更新 UI：恢復 UI 狀態
+            // 更新 UI：恢復 UI 狀態（立即恢復麥克風顏色）
             micContainerEl.classList.remove('recording');
-            // 讓麥克風消失或變回原狀，這裡選擇隱藏整個引導畫面來展示金幣
-            // 但根據需求：先等待 5 秒
+            micContainerEl.classList.add('idle'); // 立即恢復為黑色和呼吸狀態
             
             console.log('⏹️ 停止錄音，進入 5 秒緩衝...');
             playSound('end');
@@ -1202,7 +1257,6 @@
             // 5 秒緩衝等待（給用戶平靜的時間）
             setTimeout(() => {
                  hideGuideMessage();
-                 micContainerEl.classList.add('idle'); // 恢復呼吸狀態
             }, 5000);
             
             // 處理錄音數據 (此部分不變，在背景執行)
