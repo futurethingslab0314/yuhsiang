@@ -185,34 +185,6 @@
             transition: width 0.1s, height 0.1s, opacity 0.1s;
         }
 
-        /* 完成按鈕 */
-        .finish-btn {
-            margin-top: 40px;
-            padding: 12px 32px;
-            background-color: transparent;
-            border: 4px solid #555; /* 柔和邊框 */
-            color: #888;
-            font-family: 'Courier New', monospace; /* 按鈕保持一點像素感 */
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            pointer-events: none;
-        }
-
-        .mic-container.recording + .finish-btn {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-            border-color: #000000;
-            color: #000000;
-        }
-
-        .finish-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
 
         /* =========================================
            列印提示區域 (Print Notification)
@@ -501,8 +473,6 @@
                     </svg>
                 </div>
 
-                <!-- 完成按鈕 (錄音時顯示) -->
-                <button class="finish-btn" id="finishBtn">完成 / 結束</button>
             </div>
 
             <!-- 列印提示 -->
@@ -626,7 +596,7 @@
         let guideMessageEl, guideTextEl;
         let printNotificationEl, printMessageEl;
         let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
-        let micContainerEl, finishBtnEl, micRipplesEl; // 新增 UI 元素
+        let micContainerEl, micRipplesEl; // 新增 UI 元素
         
         // 音訊分析相關
         let audioContext;
@@ -657,7 +627,6 @@
             
             // 新增的 UI 元素
             micContainerEl = document.getElementById('micContainer');
-            finishBtnEl = document.getElementById('finishBtn');
             micRipplesEl = document.getElementById('micRipples');
             
             // 設定麥克風互動
@@ -687,13 +656,7 @@
                 }
             });
             
-            // 點擊完成按鈕停止錄音
-            finishBtnEl.addEventListener('click', function(e) {
-                e.stopPropagation(); // 避免觸發麥克風點擊
-                if (AppState.isRecording) {
-                    handleRecordingEnd();
-                }
-            });
+            // 注意：錄音結束由實體按鈕控制，會直接呼叫 handleRecordingEnd()
         }
 
         // 開始動畫循環
@@ -1120,9 +1083,6 @@
             // 讓麥克風消失或變回原狀，這裡選擇隱藏整個引導畫面來展示金幣
             // 但根據需求：先等待 5 秒
             
-            finishBtnEl.textContent = '記錄儲存中...';
-            finishBtnEl.style.opacity = '0.7';
-            
             console.log('⏹️ 停止錄音，進入 5 秒緩衝...');
             playSound('end');
             
@@ -1133,8 +1093,6 @@
             setTimeout(() => {
                  hideGuideMessage();
                  micContainerEl.classList.add('idle'); // 恢復呼吸狀態
-                 finishBtnEl.textContent = '完成 / 結束'; // 重置文字
-                 finishBtnEl.style.opacity = ''; // 重置樣式
             }, 5000);
             
             // 處理錄音數據 (此部分不變，在背景執行)
