@@ -738,15 +738,11 @@
                 // 計算目前堆疊最高點
                 const highestTopY = getHighestStackTopY();
                 
-                // 取得語音指示器相對於畫布的 Y（以畫布座標）
-                const indicatorRect = voiceIndicatorEl.getBoundingClientRect();
-                const canvasRect = canvas.getBoundingClientRect();
-                const indicatorCenterYClient = ((indicatorRect.top + indicatorRect.bottom) / 2) - canvasRect.top;
-                const scaleY = canvas.height / canvasRect.height;
-                const indicatorCenterY = indicatorCenterYClient * scaleY; // 轉為畫布座標
+                // 使用固定高度觸發列印（約畫面的 20% 位置，即從頂部往下 20%）
+                const triggerY = canvas.height * 0.2; // 固定觸發高度
                 
-                // 當堆疊高度達到或超過語音指示器位置，觸發列印（僅一次）
-                if (!window.__printedRoundFlag && highestTopY !== null && highestTopY <= indicatorCenterY) {
+                // 當堆疊高度達到或超過觸發位置，觸發列印（僅一次）
+                if (!window.__printedRoundFlag && highestTopY !== null && highestTopY <= triggerY) {
                     window.__printedRoundFlag = true;
                     triggerPrintNotification();
                 }
@@ -855,68 +851,6 @@
             }
         }
 
-        // 設定語音指示器
-        function setupVoiceIndicator() {
-            const voiceIndicator = document.getElementById('voiceIndicator');
-            let clickTimer = null;
-            let isLongPress = false;
-            let hasMoved = false;
-            
-            // 單擊切換全螢幕
-            voiceIndicator.addEventListener('click', function(e) {
-                // 只有在不是長按且沒有移動時才切換全螢幕
-                if (!isLongPress && !hasMoved) {
-                    toggleFullscreen();
-                }
-            });
-            
-            // 長按開始錄音
-            voiceIndicator.addEventListener('pointerdown', function(e) {
-                isLongPress = false;
-                hasMoved = false;
-                clickTimer = setTimeout(() => {
-                    isLongPress = true;
-                    handleRecordingStart();
-                }, 500); // 500ms 後視為長按
-            });
-            
-            // 偵測移動（如果移動了就不算點擊）
-            voiceIndicator.addEventListener('pointermove', function(e) {
-                if (clickTimer) {
-                    hasMoved = true;
-                }
-            });
-            
-            voiceIndicator.addEventListener('pointerup', function() {
-                if (clickTimer) {
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                }
-                if (AppState.isRecording) {
-                    handleRecordingEnd();
-                }
-                // 重置狀態
-                setTimeout(() => {
-                    isLongPress = false;
-                    hasMoved = false;
-                }, 100);
-            });
-            
-            voiceIndicator.addEventListener('pointerleave', function() {
-                if (clickTimer) {
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                }
-                if (AppState.isRecording) {
-                    handleRecordingEnd();
-                }
-                // 重置狀態
-                setTimeout(() => {
-                    isLongPress = false;
-                    hasMoved = false;
-                }, 100);
-            });
-        }
 
         // 全螢幕切換功能
         function toggleFullscreen() {
