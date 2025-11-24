@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { userId = 'default-user', date, daysToAnalyze = 7 } = req.body || {};
+        const { userId = 'default-user', date, daysToAnalyze = 7, language = 'zh-TW' } = req.body || {};
 
         // 檢查 OpenAI API Key
         if (!process.env.OPENAI_API_KEY) {
@@ -66,6 +66,11 @@ export default async function handler(req, res) {
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY
         });
+
+        // 根據語言設定 Prompt 參數
+        const isEnglish = language === 'en-US';
+        const targetLang = isEnglish ? 'English' : 'Traditional Chinese';
+        const charLimit = isEnglish ? '15-40 words' : '25 個字以內';
 
         // 讀取使用者最近 N 天的日記內容
         let recentDiaries = [];
@@ -99,14 +104,19 @@ export default async function handler(req, res) {
             const summaries = recentDiaries
                 .map((entry, idx) => `${idx + 1}. ${entry.date}: ${entry.content.slice(0, 100)}...`)
                 .join('\n');
-            userContext = `以下是使用者最近 ${recentDiaries.length} 天的日記摘要：\n${summaries}`;
+            userContext = isEnglish 
+                ? `Here are the user's recent diary summaries for the past ${recentDiaries.length} days:\n${summaries}`
+                : `以下是使用者最近 ${recentDiaries.length} 天的日記摘要：\n${summaries}`;
         } else {
-            userContext = '目前沒有使用者的近期日記紀錄。請假設使用者處於【麻木期】或【深淵期】，需要低能量、安全感的開場。';
+            userContext = isEnglish
+                ? 'No recent diary records available. Assume the user is in the [Numbness] or [Abyss] phase and needs a low-energy, safe opening.'
+                : '目前沒有使用者的近期日記紀錄。請假設使用者處於【麻木期】或【深淵期】，需要低能量、安全感的開場。';
         }
 
         const prompt = `# Goal
 
 根據輸入的用戶近期狀態（User Context），生成一句「每日引導語」。
+Target Language: ${targetLang}
 
 這句話的目的是：降低用戶開口的心理門檻，讓他們感覺被接納，並願意對著麥克風說出今天的感受。
 
@@ -148,7 +158,7 @@ export default async function handler(req, res) {
 
 2. **禁止說教與正能量：** 嚴禁使用「加油」、「明天會更好」、「開心點」等詞彙。
 
-3. **簡短：** 引導語必須在 **25 個字以內**（因為螢幕閱讀時間有限）。
+3. **簡短：** 引導語必須在 **${charLimit}**（因為螢幕閱讀時間有限）。
 
 4. **口語化：** 像是一個老朋友坐在旁邊輕聲說話，不要像機器人或醫生。
 
@@ -162,9 +172,7 @@ export default async function handler(req, res) {
 - 引號（「」、""、''）
 - 任何前綴或後綴說明文字
 
-只輸出純文字引導語，例如：
-- ✅ 正確：「今天覺得身體重重的嗎？如果是，輕輕『嗯』一聲就好。」
-- ❌ 錯誤：「## 每日引導語「今天覺得身體重重的嗎？如果是，輕輕『嗯』一聲就好。」」
+只輸出純文字引導語，使用語言：${targetLang}。
 
 # Input Data (User Context)
 ${userContext}`;
@@ -172,7 +180,7 @@ ${userContext}`;
         const completion = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
             messages: [
-                { role: 'system', content: '你是一位深具同理心、溫暖且不過度熱情的心理陪伴專家。你的載體是一個放在家中的互動裝置，你的用戶是正在經歷憂鬱症狀的人。今天是晚間時刻。' },
+                { role: 'system', content: `你是一位深具同理心、溫暖且不過度熱情的心理陪伴專家。你的載體是一個放在家中的互動裝置，你的用戶是正在經歷憂鬱症狀的人。今天是晚間時刻。請使用 ${targetLang} 回應。` },
                 { role: 'user', content: prompt }
             ],
             temperature: 0.7,

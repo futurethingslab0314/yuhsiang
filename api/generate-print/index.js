@@ -41,12 +41,18 @@ export default async function handler(req, res) {
             userId = 'default-user', 
             totalCoins = 0, 
             date = new Date().toISOString().slice(0,10),
-            daysToAnalyze = 10
+            daysToAnalyze = 10,
+            language = 'zh-TW'
         } = req.body || {};
 
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY
         });
+
+        // 根據語言設定 Prompt 參數
+        const isEnglish = language === 'en-US';
+        const targetLang = isEnglish ? 'English' : 'Traditional Chinese';
+        const charLimit = isEnglish ? '32 alphanumeric characters' : '16 個全形中文字符';
 
         // 讀取使用者最近的日記內容和統計數據
         let recentDiaries = [];
@@ -84,7 +90,7 @@ export default async function handler(req, res) {
 
         // 組合 prompt
         let userHistorySummary = '';
-        let emotionalKeywords = '平靜、努力、堅持'; // 預設關鍵字
+        let emotionalKeywords = isEnglish ? 'Calm, Effort, Persistence' : '平靜、努力、堅持'; // 預設關鍵字
 
         if (recentDiaries.length > 0) {
             const summaries = recentDiaries
@@ -96,13 +102,18 @@ export default async function handler(req, res) {
             // 簡單從日記內容提取關鍵字（這裡僅作示例，實際可使用更複雜的邏輯或讓 GPT 分析）
             // 在這裡我們讓 GPT 在 prompt 內自行分析情緒，因此變數作為上下文提供
         } else {
-            userHistorySummary = '（無近期日記記錄，但使用者已持續累積努力）';
-            emotionalKeywords = '疲憊、需要休息、值得被看見';
+            userHistorySummary = isEnglish 
+                ? '(No recent diary records, but the user has continuously accumulated effort)'
+                : '（無近期日記記錄，但使用者已持續累積努力）';
+            emotionalKeywords = isEnglish 
+                ? 'Tired, Need Rest, Worthy of Being Seen'
+                : '疲憊、需要休息、值得被看見';
         }
 
         const prompt = `# Role
 
 你是一個溫柔的時光記錄者與情感轉譯者。你的載體是一個互動裝置的熱感應印表機。
+Target Language: ${targetLang}
 
 用戶是憂鬱症患者，他們剛剛完成了一個階段的語音記錄累積（集滿金幣）。
 
@@ -195,7 +206,7 @@ export default async function handler(req, res) {
 
 # Constraints (絕對限制)
 
-1. **寬度限制：** 輸出的每一行文字 **絕對不能超過 16 個全形中文字符（或 32 個英數字）**，以適應熱感應紙寬度，若超過請強制換行。
+1. **寬度限制：** 輸出的每一行文字 **絕對不能超過 ${charLimit}**，以適應熱感應紙寬度，若超過請強制換行。
 
 2. **格式化：** 
    - 使用 --- 或 === 作為分隔線
@@ -218,6 +229,7 @@ export default async function handler(req, res) {
 - 任何前綴或後綴說明文字
 
 只輸出純文本紙條內容，確保排版已經針對窄幅紙張優化。
+使用語言：${targetLang}。
 
 範例中的引號僅供參考格式，實際輸出時：
 - 如果引用用戶說過的話，可以使用引號
@@ -237,7 +249,7 @@ ${date.replace(/-/g, '/')}
         const completion = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
             messages: [
-                { role: 'system', content: '你是一個溫柔的時光記錄者與情感轉譯者。你的載體是一個互動裝置的熱感應印表機。根據使用者的歷史記錄生成具有療癒價值的紙條內容。' },
+                { role: 'system', content: `你是一個溫柔的時光記錄者與情感轉譯者。你的載體是一個互動裝置的熱感應印表機。根據使用者的歷史記錄生成具有療癒價值的紙條內容。請使用 ${targetLang} 回應。` },
                 { role: 'user', content: prompt }
             ],
             temperature: 0.7,

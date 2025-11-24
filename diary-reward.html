@@ -303,6 +303,35 @@
             font-family: monospace;
         }
 
+        /* 語言切換按鈕 */
+        .lang-toggle-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            padding: 8px 16px;
+            background-color: transparent;
+            border: 2px solid #000000;
+            color: #000000;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .lang-toggle-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            opacity: 1;
+        }
+
+        /* 針對暗色背景的適配 */
+        .print-notification .lang-toggle-btn {
+            border-color: #e6e0d5;
+            color: #e6e0d5;
+        }
+
         .exit-fullscreen-btn:hover {
             background-color: rgba(255, 255, 255, 0.2);
             transform: scale(1.1);
@@ -459,6 +488,9 @@
             
             <!-- 引導語顯示 -->
             <div class="guide-message" id="guideMessage">
+                <!-- 語言切換按鈕 -->
+                <button class="lang-toggle-btn" id="langToggleBtn">EN / 中</button>
+                
                 <div class="guide-text" id="guideText"></div>
                 
                 <!-- 新的麥克風互動區 -->
@@ -585,6 +617,7 @@
             isRecording: false,
             currentGuideText: '',
             debugMode: false,
+            language: 'zh-TW',              // 預設語言：zh-TW 或 en-US
             // 引導語排程（預設 22:00 顯示一次）
             guideEnabled: true,
             guideHour: 22,
@@ -592,11 +625,44 @@
             lastGuideShownDate: null
         };
 
+        // 多語言資源
+        const i18n = {
+            'zh-TW': {
+                guideLoading: '生成引導語中…',
+                guideFallback: '今晚想對自己說些什麼？',
+                guideHint: '輕觸開關開始記錄',
+                recordingStart: '🎤 開始錄音...',
+                recordingStop: '⏹️ 停止錄音，進入 5 秒緩衝...',
+                processing: '記錄儲存中...',
+                finish: '完成 / 結束',
+                printTitle: '列印中',
+                printMessage: '正在將你的話語<br>化為實體...',
+                printNotification: '已累積 ${coins} 枚金幣！<br>正在列印你的專屬紙籤...',
+                printNotificationTitle: '恭喜你！',
+                langBtn: 'EN'
+            },
+            'en-US': {
+                guideLoading: 'Generating guide...',
+                guideFallback: 'What would you like to say to yourself tonight?',
+                guideHint: 'Tap to start recording',
+                recordingStart: '🎤 Recording started...',
+                recordingStop: '⏹️ Recording stopped, buffering...',
+                processing: 'Saving record...',
+                finish: 'Finish / End',
+                printTitle: 'Printing',
+                printMessage: 'Turning your words<br>into reality...',
+                printNotification: 'Collected ${coins} coins!<br>Printing your paper slip...',
+                printNotificationTitle: 'Congratulations!',
+                langBtn: '中'
+            }
+        };
+
         // UI 元素
         let guideMessageEl, guideTextEl;
-        let printNotificationEl, printMessageEl;
+        let printNotificationEl, printMessageEl, printTitleEl;
         let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
-        let micContainerEl, micRipplesEl; // 新增 UI 元素
+        let micContainerEl, micRipplesEl;
+        let langToggleBtnEl; // 新增語言切換按鈕
         
         // 音訊分析相關
         let audioContext;
@@ -620,6 +686,7 @@
             guideTextEl = document.getElementById('guideText');
             printNotificationEl = document.getElementById('printNotification');
             printMessageEl = document.getElementById('printMessage');
+            printTitleEl = printNotificationEl.querySelector('.print-title'); // 新增 title 選擇
             debugInfoEl = document.getElementById('debugInfo');
             debugStateEl = document.getElementById('debugState');
             debugCoinsEl = document.getElementById('debugCoins');
@@ -628,6 +695,10 @@
             // 新增的 UI 元素
             micContainerEl = document.getElementById('micContainer');
             micRipplesEl = document.getElementById('micRipples');
+            langToggleBtnEl = document.getElementById('langToggleBtn');
+            
+            // 設定語言切換互動
+            setupLanguageToggle();
             
             // 設定麥克風互動
             setupMicInteraction();
@@ -647,6 +718,42 @@
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
         
+        // 設定語言切換互動
+        function setupLanguageToggle() {
+            langToggleBtnEl.addEventListener('click', function(e) {
+                e.stopPropagation(); // 避免觸發背景點擊
+                toggleLanguage();
+            });
+            
+            // 初始化按鈕文字
+            updateInterfaceText();
+        }
+
+        function toggleLanguage() {
+            AppState.language = AppState.language === 'zh-TW' ? 'en-US' : 'zh-TW';
+            console.log('🌐 切換語言:', AppState.language);
+            updateInterfaceText();
+            
+            // 如果當前正在顯示引導語且非錄音中，重新載入引導語
+            if (AppState.currentState === SystemState.IDLE && !AppState.isRecording) {
+                showDailyGuide(); 
+            }
+        }
+
+        function updateInterfaceText() {
+            const t = i18n[AppState.language];
+            langToggleBtnEl.textContent = t.langBtn;
+            
+            // 更新列印相關文字 (如果在列印狀態)
+            if (AppState.currentState === SystemState.PRINT_READY) {
+                // 注意：這裡只更新靜態部分，動態部分由觸發函數處理
+                if (printTitleEl) printTitleEl.textContent = t.printNotificationTitle;
+            } else {
+                if (printTitleEl) printTitleEl.textContent = t.printTitle;
+                if (printMessageEl) printMessageEl.innerHTML = t.printMessage;
+            }
+        }
+
         // 設定麥克風互動邏輯
         function setupMicInteraction() {
             // 點擊麥克風開始錄音
@@ -898,8 +1005,9 @@
 
         async function showDailyGuide() {
             try {
+                const t = i18n[AppState.language];
                 // 先顯示載入中的簡短字樣，避免空白
-                guideTextEl.textContent = '生成引導語中…';
+                guideTextEl.textContent = t.guideLoading;
                 guideMessageEl.classList.add('show');
 
                 const resp = await fetch(`${API_BASE_URL}/api/generate-guide`, {
@@ -908,7 +1016,8 @@
                     body: JSON.stringify({ 
                         userId: 'default-user',
                         date: new Date().toISOString().slice(0,10),
-                        daysToAnalyze: 7
+                        daysToAnalyze: 7,
+                        language: AppState.language // 傳遞語言參數
                     })
                 });
                 if (!resp.ok) throw new Error('API 失敗');
@@ -927,7 +1036,7 @@
                 text = text.trim();
                 
                 AppState.currentGuideText = text;
-                guideTextEl.textContent = text || '今晚想對自己說些什麼？';
+                guideTextEl.textContent = text || t.guideFallback;
                 
                 // 重置動畫（重新觸發呼吸動畫）
                 guideTextEl.style.animation = 'none';
@@ -938,7 +1047,8 @@
                 console.log(`📝 顯示引導語(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, text);
             } catch (e) {
                 console.error('取得引導語失敗，改用預設樣本：', e);
-                const fallback = '今晚想對自己說些什麼？';
+                const t = i18n[AppState.language];
+                const fallback = t.guideFallback;
                 AppState.currentGuideText = fallback;
                 guideTextEl.textContent = fallback;
                 guideMessageEl.classList.add('show');
@@ -1202,11 +1312,10 @@
         // ====================================
         function triggerPrintNotification() {
             AppState.currentState = SystemState.PRINT_READY;
+            const t = i18n[AppState.language];
             
-            printMessageEl.innerHTML = `
-                已累積 ${AppState.totalCoins} 枚金幣！<br>
-                正在列印你的專屬紙籤...
-            `;
+            printMessageEl.innerHTML = t.printNotification.replace('${coins}', AppState.totalCoins);
+            if (printTitleEl) printTitleEl.textContent = t.printNotificationTitle;
             
             printNotificationEl.classList.add('show');
             
@@ -1251,7 +1360,8 @@
                         userId: 'default-user',
                         totalCoins: AppState.totalCoins,
                         date: new Date().toISOString().slice(0,10),
-                        daysToAnalyze: 10
+                        daysToAnalyze: 10,
+                        language: AppState.language // 傳遞語言參數
                     })
                 });
                 if (!resp.ok) throw new Error('API 失敗');
