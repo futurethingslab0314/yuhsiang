@@ -47,50 +47,34 @@
             object-fit: contain;
         }
 
-        .voice-indicator {
-            position: absolute;
-            top: 170px;
-            right: 410px;
-            cursor: pointer;
-            user-select: none;
-            touch-action: none;
+        /* =========================================
+           核心動畫定義
+           ========================================= */
+        @keyframes breathe-text {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
-        .voice-dots {
-            display: flex;
-            align-items: flex-end;
-            gap: 4px;
+        @keyframes pulse-mic {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
 
-        .voice-dot {
-            width: 12px;
-            height: 12px;
-            background-color: #ffffff;
-            image-rendering: pixelated;
+        @keyframes ripple-wave {
+            0% { transform: scale(1); opacity: 0.6; border-width: 4px; }
+            100% { transform: scale(3); opacity: 0; border-width: 0px; }
         }
 
-        .voice-indicator.active .voice-dot {
-            animation: voice-bounce 1.2s ease-in-out infinite;
+        @keyframes print-wave {
+            0% { height: 10%; opacity: 0.3; }
+            50% { height: 100%; opacity: 0.8; }
+            100% { height: 10%; opacity: 0.3; }
         }
 
-        .voice-indicator.active .voice-dot:nth-child(2) {
-            animation-delay: 0.15s;
-        }
-
-        .voice-indicator.active .voice-dot:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        @keyframes voice-bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-16px);
-            }
-        }
-
-        /* 引導語顯示區域（滿版黃底黑字） */
+        /* =========================================
+           引導語顯示區域 (Prompt Screen)
+           ========================================= */
         .guide-message {
             position: absolute;
             inset: 0;
@@ -98,18 +82,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 80px 60px;
-            background-color: #FFD700; /* 與金幣相同黃色 */
-            color: #000000;
+            padding: 40px;
+            /* 背景：低飽和度暖深色，保持夜間舒適與留白感 */
+            background-color: #1c1b19; 
+            color: #e6e0d5; /* 暖白字 */
             text-align: center;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            font-size: 36px;
-            line-height: 1.7;
-            font-weight: bold;
-            letter-spacing: 1px;
-            image-rendering: pixelated;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.8s ease-in-out;
             pointer-events: none;
             z-index: 50;
         }
@@ -119,39 +98,137 @@
             pointer-events: auto;
         }
 
+        /* 引導語文字：呼吸感、清晰易讀 */
         .guide-message .guide-text {
-            margin-bottom: 24px;
-            color: #000000;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            font-weight: bold;
-            letter-spacing: 1px;
+            margin-bottom: 120px; /* 大量留白 */
+            color: #e6e0d5;
+            /* 修正：使用清晰易讀的內文字體，非像素字 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 32px;
+            line-height: 1.8;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            max-width: 800px;
+            
+            /* 呼吸動畫：緩慢淡入 */
+            opacity: 0; /* 初始隱藏 */
+            animation: breathe-text 4s ease-out forwards;
+            animation-delay: 0.5s;
         }
 
         .guide-message .guide-hint {
-            font-size: 22px;
-            color: #000000;
-            opacity: 0.8;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            font-weight: bold;
-            letter-spacing: 1px;
+            /* 隱藏舊的提示文字，由麥克風圖示取代 */
+            display: none;
         }
 
-        /* 列印提示區域 */
-        .print-notification {
+        /* =========================================
+           麥克風與錄音互動區
+           ========================================= */
+        .mic-container {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            cursor: pointer;
+            z-index: 60;
+        }
+
+        /* 麥克風圖示 (像素風格 SVG) */
+        .pixel-mic-icon {
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+            fill: #e6e0d5;
+            transition: all 0.3s ease;
+        }
+
+        /* 預備狀態：呼吸閃爍 */
+        .mic-container.idle .pixel-mic-icon {
+            animation: pulse-mic 3s infinite ease-in-out;
+            opacity: 0.7;
+        }
+
+        /* 錄音狀態：聲波動畫容器 */
+        .mic-ripples {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%;
-            max-width: 600px;
-            padding: 60px 40px;
-            background-color: rgba(255, 215, 0, 0.95);
-            border: 4px solid #ffffff;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            z-index: 20;
+            display: none;
+        }
+
+        .mic-container.recording .mic-ripples {
+            display: block;
+        }
+
+        /* 動態生成的波紋圈 */
+        .ripple-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(255, 184, 0, 0.4); /* 柔和暖黃 */
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            /* 動畫由 JS 動態控制強度，或使用 CSS 預設 */
+            transition: width 0.1s, height 0.1s, opacity 0.1s;
+        }
+
+        /* 完成按鈕 */
+        .finish-btn {
+            margin-top: 40px;
+            padding: 12px 32px;
+            background-color: transparent;
+            border: 4px solid #555; /* 柔和邊框 */
+            color: #888;
+            font-family: 'Courier New', monospace; /* 按鈕保持一點像素感 */
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .mic-container.recording + .finish-btn {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            border-color: #e6e0d5;
+            color: #e6e0d5;
+        }
+
+        .finish-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* =========================================
+           列印提示區域 (Print Notification)
+           ========================================= */
+        .print-notification {
+            position: absolute;
+            inset: 0; /* 滿版覆蓋 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(28, 27, 25, 0.95); /* 深色背景 */
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out; /* 慢速優雅過場 */
+            pointer-events: none;
+            z-index: 100;
         }
 
         .print-notification.show {
@@ -159,27 +236,59 @@
             pointer-events: auto;
         }
 
-        .print-notification .print-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
+        .print-icon-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .print-icon {
+            font-size: 64px;
+            z-index: 2;
+        }
+
+        /* 模擬打印機聲音波形 */
+        .print-sound-waves {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            height: 40px;
+            align-items: flex-end;
+        }
+
+        .sound-bar {
+            width: 6px;
+            background-color: #FFB800;
+            border-radius: 3px;
+            animation: print-wave 0.8s infinite ease-in-out;
         }
 
         .print-notification .print-title {
-            font-size: 36px;
-            font-weight: bold;
-            color: #000000;
-            margin-bottom: 20px;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            letter-spacing: 1px;
+            font-size: 28px;
+            font-weight: 400;
+            color: #e6e0d5;
+            margin-bottom: 16px;
+            font-family: -apple-system, sans-serif;
+            letter-spacing: 2px;
         }
 
         .print-notification .print-message {
-            font-size: 24px;
-            color: #333333;
-            line-height: 1.5;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
-            font-weight: bold;
-            letter-spacing: 1px;
+            font-size: 16px;
+            color: #888;
+            font-family: -apple-system, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* 隱藏舊元素 */
+        .voice-indicator, .voice-dots, .voice-dot {
+            display: none;
         }
 
         /* 狀態指示器（測試用） */
@@ -277,7 +386,7 @@
         .fullscreen-prompt-title h2 {
             font-size: clamp(48px, 8vw, 120px);
             font-weight: bold;
-            color: #FFD700;
+            color: #FFB800;
             margin: 0;
             line-height: 1.1;
             letter-spacing: clamp(2px, 0.5vw, 8px);
@@ -288,7 +397,7 @@
             width: clamp(80px, 12vw, 150px);
             height: clamp(80px, 12vw, 150px);
             border-radius: 50%;
-            background-color: #FFD700;
+            background-color: #FFB800;
             border: none;
             cursor: pointer;
             display: flex;
@@ -376,28 +485,42 @@
         <div class="canvas-container">
             <canvas id="coinCanvas" class="coin-canvas"></canvas>
             
-            <!-- 語音指示器 -->
-            <div class="voice-indicator" id="voiceIndicator">
-                <div class="voice-dots">
-                    <div class="voice-dot"></div>
-                    <div class="voice-dot"></div>
-                    <div class="voice-dot"></div>
-                </div>
-            </div>
-
             <!-- 引導語顯示 -->
             <div class="guide-message" id="guideMessage">
                 <div class="guide-text" id="guideText"></div>
-                <div class="guide-hint">輕觸開關開始記錄</div>
+                
+                <!-- 新的麥克風互動區 -->
+                <div class="mic-container idle" id="micContainer">
+                    <div class="mic-ripples" id="micRipples">
+                        <!-- 波紋圓圈將由 JS 動態產生 -->
+                    </div>
+                    <!-- 像素麥克風 SVG -->
+                    <svg class="pixel-mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                </div>
+
+                <!-- 完成按鈕 (錄音時顯示) -->
+                <button class="finish-btn" id="finishBtn">完成 / 結束</button>
             </div>
 
             <!-- 列印提示 -->
             <div class="print-notification" id="printNotification">
-                <div class="print-icon">📄</div>
-                <div class="print-title">恭喜你！</div>
+                <div class="print-icon-container">
+                    <div class="print-icon">📄</div>
+                    <!-- 模擬列印聲波 -->
+                    <div class="print-sound-waves">
+                        <div class="sound-bar" style="animation-delay: 0s; height: 20px;"></div>
+                        <div class="sound-bar" style="animation-delay: 0.2s; height: 30px;"></div>
+                        <div class="sound-bar" style="animation-delay: 0.4s; height: 15px;"></div>
+                        <div class="sound-bar" style="animation-delay: 0.1s; height: 25px;"></div>
+                        <div class="sound-bar" style="animation-delay: 0.3s; height: 10px;"></div>
+                    </div>
+                </div>
+                <div class="print-title">列印中</div>
                 <div class="print-message" id="printMessage">
-                    已累積足夠金幣<br>
-                    正在列印你的紙籤...
+                    正在將你的話語<br>化為實體...
                 </div>
             </div>
 
@@ -503,7 +626,13 @@
         let guideMessageEl, guideTextEl;
         let printNotificationEl, printMessageEl;
         let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
-        let voiceIndicatorEl;
+        let micContainerEl, finishBtnEl, micRipplesEl; // 新增 UI 元素
+        
+        // 音訊分析相關
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let rippleInterval;
 
         // ====================================
         // 初始化
@@ -525,10 +654,14 @@
             debugStateEl = document.getElementById('debugState');
             debugCoinsEl = document.getElementById('debugCoins');
             debugRecordingEl = document.getElementById('debugRecording');
-            voiceIndicatorEl = document.getElementById('voiceIndicator');
             
-            // 設定語音指示器
-            setupVoiceIndicator();
+            // 新增的 UI 元素
+            micContainerEl = document.getElementById('micContainer');
+            finishBtnEl = document.getElementById('finishBtn');
+            micRipplesEl = document.getElementById('micRipples');
+            
+            // 設定麥克風互動
+            setupMicInteraction();
             
             // 開始動畫
             startAnimation();
@@ -544,6 +677,24 @@
             
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
+        
+        // 設定麥克風互動邏輯
+        function setupMicInteraction() {
+            // 點擊麥克風開始錄音
+            micContainerEl.addEventListener('click', function() {
+                if (AppState.currentState === SystemState.IDLE && !AppState.isRecording) {
+                    handleRecordingStart();
+                }
+            });
+            
+            // 點擊完成按鈕停止錄音
+            finishBtnEl.addEventListener('click', function(e) {
+                e.stopPropagation(); // 避免觸發麥克風點擊
+                if (AppState.isRecording) {
+                    handleRecordingEnd();
+                }
+            });
+        }
 
         // 開始動畫循環
         function startAnimation() {
@@ -580,7 +731,7 @@
                     }
                     
                     // 繪製硬幣
-                    ctx.fillStyle = '#FFD700';
+                    ctx.fillStyle = '#FFB800';
                     ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
                 });
                 
@@ -903,6 +1054,17 @@
                     } 
                 });
                 
+                // 設定音訊分析 (視覺化)
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(audioStream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                // 啟動波紋動畫更新循環
+                startRippleAnimation();
+                
                 // 建立 MediaRecorder
                 mediaRecorder = new MediaRecorder(audioStream, {
                     mimeType: 'audio/webm;codecs=opus'
@@ -920,8 +1082,9 @@
                 AppState.isRecording = true;
                 AppState.currentState = SystemState.RECORDING;
                 
-                // 更新 UI
-                document.getElementById('voiceIndicator').classList.add('active');
+                // 更新 UI：移除 idle，加入 recording
+                micContainerEl.classList.remove('idle');
+                micContainerEl.classList.add('recording');
                 
                 console.log('🎤 開始錄音...');
                 playSound('start');
@@ -933,31 +1096,102 @@
             }
         }
 
+        // 波紋動畫邏輯
+        function startRippleAnimation() {
+            if (rippleInterval) clearInterval(rippleInterval);
+            
+            // 每 100ms 檢查一次音量並產生波紋
+            rippleInterval = setInterval(() => {
+                if (!AppState.isRecording || !analyser) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                
+                // 計算平均音量
+                let sum = 0;
+                for(let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / dataArray.length;
+                
+                // 如果音量超過閾值，產生波紋
+                if (average > 10) { // 閾值可調整
+                    createRipple(average);
+                }
+            }, 100);
+        }
+        
+        function createRipple(intensity) {
+            const ripple = document.createElement('div');
+            ripple.classList.add('ripple-circle');
+            
+            // 根據音量調整大小與透明度
+            const scale = 1 + (intensity / 50); // 調整擴散大小
+            const opacity = Math.min(0.8, intensity / 100);
+            
+            // 設定初始樣式
+            ripple.style.width = '100%';
+            ripple.style.height = '100%';
+            ripple.style.opacity = opacity;
+            ripple.style.transform = 'translate(-50%, -50%) scale(1)';
+            
+            micRipplesEl.appendChild(ripple);
+            
+            // 強制重繪以觸發 transition
+            void ripple.offsetWidth;
+            
+            // 執行動畫
+            ripple.style.transform = `translate(-50%, -50%) scale(${scale * 2})`;
+            ripple.style.opacity = '0';
+            
+            // 清理 DOM
+            setTimeout(() => {
+                if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
+            }, 1000); // 與 CSS transition 時間匹配
+        }
+
         async function handleRecordingEnd() {
             if (!AppState.isRecording || !mediaRecorder) return;
             
+            // 停止錄音狀態
             AppState.isRecording = false;
             AppState.currentState = SystemState.PROCESSING;
             
-            // 更新 UI
-            document.getElementById('voiceIndicator').classList.remove('active');
-            hideGuideMessage();
+            // 清除波紋動畫
+            if (rippleInterval) {
+                clearInterval(rippleInterval);
+                rippleInterval = null;
+            }
             
-            console.log('⏹️ 停止錄音，開始處理...');
+            // 更新 UI：恢復 UI 狀態
+            micContainerEl.classList.remove('recording');
+            // 讓麥克風消失或變回原狀，這裡選擇隱藏整個引導畫面來展示金幣
+            // 但根據需求：先等待 5 秒
+            
+            finishBtnEl.textContent = '記錄儲存中...';
+            finishBtnEl.style.opacity = '0.7';
+            
+            console.log('⏹️ 停止錄音，進入 5 秒緩衝...');
             playSound('end');
             
             // 停止錄音
             mediaRecorder.stop();
             
-            // 等待錄音數據就緒
+            // 5 秒緩衝等待（給用戶平靜的時間）
+            setTimeout(() => {
+                 hideGuideMessage();
+                 micContainerEl.classList.add('idle'); // 恢復呼吸狀態
+                 finishBtnEl.textContent = '完成 / 結束'; // 重置文字
+                 finishBtnEl.style.opacity = ''; // 重置樣式
+            }, 5000);
+            
+            // 處理錄音數據 (此部分不變，在背景執行)
             mediaRecorder.addEventListener('stop', async () => {
                 const recordingDuration = Math.round((Date.now() - recordingStartTime) / 1000);
-                
-                // 建立音訊 Blob
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 
-                // 停止音訊串流
+                // 停止音訊串流與 Context
                 audioStream.getTracks().forEach(track => track.stop());
+                if (audioContext) audioContext.close();
                 
                 // 處理錄音
                 await processRecording(audioBlob, recordingDuration);
@@ -1000,18 +1234,29 @@
                         console.error('❌ 儲存日記失敗:', error);
                     } finally {
                         // 即使儲存失敗，也給予獎勵，避免中斷體驗
-                        AppState.currentState = SystemState.REWARD;
-                        giveReward();
-                        updateDebugInfo();
+                        // 確保至少等待 5 秒（從錄音結束開始算）
+                        const elapsed = Date.now() - (recordingStartTime + duration * 1000);
+                        const remainingWait = Math.max(0, 5000 - elapsed);
+                        
+                        setTimeout(() => {
+                            AppState.currentState = SystemState.REWARD;
+                            giveReward();
+                            updateDebugInfo();
+                            // 隱藏引導畫面（若尚未隱藏）
+                            hideGuideMessage();
+                        }, remainingWait);
                     }
                 };
                 
             } catch (error) {
                 console.error('❌ 處理錄音失敗:', error);
                 // 即使失敗也給予獎勵（使用者體驗優先）
-                AppState.currentState = SystemState.REWARD;
-                giveReward();
-                updateDebugInfo();
+                setTimeout(() => {
+                    AppState.currentState = SystemState.REWARD;
+                    giveReward();
+                    updateDebugInfo();
+                    hideGuideMessage();
+                }, 5000);
             }
         }
 
