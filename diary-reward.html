@@ -198,26 +198,29 @@
             width: 64px;
             height: 64px;
             image-rendering: pixelated;
-            fill: #000000;
-            /* 黑字 */
+            fill: #FFB800;
             transition: all 0.3s ease;
         }
 
         /* 預備狀態：呼吸閃爍 */
+        /* 預備狀態：隱藏麥克風，只顯示點擊區域提示（如果需要） */
         .mic-container.idle .pixel-mic-icon {
-            animation: pulse-mic 3s infinite ease-in-out;
-            opacity: 0.7;
-            fill: #000000;
-            /* 黑色 */
+            opacity: 0;
+            /* 隱藏 */
+            fill: #FFB800;
+            /* 預備顏色，雖然隱藏了但保持一致 */
+            transform: scale(0.8);
         }
 
         /* 錄音狀態：麥克風反白 */
+        /* 錄音狀態：顯示麥克風 */
         .mic-container.recording .pixel-mic-icon {
-            fill: #ffffff;
-            /* 白色 */
+            fill: #FFB800;
+            /* 黃色 */
             opacity: 1;
-            animation: none;
-            /* 停止呼吸動畫 */
+            transform: scale(1);
+            animation: pulse-mic 2s infinite ease-in-out;
+            /* 錄音時呼吸 */
         }
 
         /* 錄音狀態：聲波動畫容器 */
