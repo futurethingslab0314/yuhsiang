@@ -104,7 +104,7 @@ export default async function handler(req, res) {
             const summaries = recentDiaries
                 .map((entry, idx) => `${idx + 1}. ${entry.date}: ${entry.content.slice(0, 100)}...`)
                 .join('\n');
-            userContext = isEnglish 
+            userContext = isEnglish
                 ? `Here are the user's recent diary summaries for the past ${recentDiaries.length} days:\n${summaries}`
                 : `以下是使用者最近 ${recentDiaries.length} 天的日記摘要：\n${summaries}`;
         } else {
@@ -170,6 +170,12 @@ Target Language: ${targetLang}
    - **Do NOT** use prefixes like "Guide:", "Suggestion:", or "Output:".
    - **ONLY** output the final guiding phrase itself.
 
+7. **Diversity & Creativity (Critical):**
+   - The examples provided above are **FOR REFERENCE ONLY**. Do NOT copy them.
+   - You MUST generate a **NEW, UNIQUE** phrase each time.
+   - Vary your sentence structure and vocabulary.
+   - Imagine the user sees this screen every day; avoid being repetitive or boring.
+
 # Input Data (User Context)
 ${userContext}
 
@@ -223,7 +229,7 @@ ${userContext}
             hasOpenAIKey: !!process.env.OPENAI_API_KEY,
             hasFirebase: !!db
         });
-        res.status(500).json({ 
+        res.status(500).json({
             error: error.message,
             details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
