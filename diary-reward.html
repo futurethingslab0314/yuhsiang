@@ -484,7 +484,7 @@
             height: clamp(80px, 12vw, 150px);
             border-radius: 4px;
             /* Square with slight rounding for retro block feel */
-            background-color: #FFB800;
+            background-color: transparent;
             border: none;
             cursor: pointer;
             display: flex;
@@ -497,10 +497,10 @@
         }
 
         .fullscreen-prompt-btn:hover {
-            background-color: #ffffff;
-            transform: scale(1.05);
+            background-color: transparent;
+            transform: scale(1.1);
             /* Slightly less scaling for block */
-            box-shadow: 0 0 15px rgba(255, 184, 0, 0.5);
+            filter: drop-shadow(0 0 10px rgba(255, 184, 0, 0.8));
             /* Glow effect */
         }
 
@@ -512,7 +512,7 @@
             content: '';
             width: 0;
             height: 0;
-            border-left: clamp(20px, 3vw, 40px) solid #000000;
+            border-left: clamp(20px, 3vw, 40px) solid #FFB800;
             border-top: clamp(14px, 2vw, 28px) solid transparent;
             border-bottom: clamp(14px, 2vw, 28px) solid transparent;
             margin-left: clamp(4px, 0.5vw, 8px);
