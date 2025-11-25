@@ -3,8 +3,8 @@ const { spawn } = require('child_process');
 console.log('正在測試 Node.js 呼叫 gpiomon...');
 console.log('請按下按鈕...');
 
-// 嘗試呼叫 gpiomon
-const gpiomon = spawn('gpiomon', ['gpiochip4', '18']);
+// 嘗試呼叫 gpiomon (使用 stdbuf -o0 強制不緩衝輸出)
+const gpiomon = spawn('stdbuf', ['-o0', 'gpiomon', 'gpiochip4', '18']);
 
 gpiomon.stdout.on('data', (data) => {
     console.log(`收到數據: ${data.toString()}`);
