@@ -727,8 +727,8 @@
         const COIN_SIZE = 32;
         const GRAVITY = 0.8;
         const GROUND_Y = 1920 - 100;
-        const LEFT_MARGIN = 36;
-        const RIGHT_MARGIN = 1080 - 36;
+        const LEFT_MARGIN = 44;
+        const RIGHT_MARGIN = 1080 - 44;
 
         // ====================================
         // 系統狀態管理
@@ -985,7 +985,15 @@
         // 找到最低可用位置
         function findSettlePosition(currentX, currentY) {
             // 網格化落腳，像俄羅斯方塊
-            const gridX = Math.round(currentX / COIN_SIZE) * COIN_SIZE;
+            // Calculate grid relative to LEFT_MARGIN to ensure alignment
+            const relativeX = currentX - LEFT_MARGIN;
+            const colIndex = Math.round(relativeX / COIN_SIZE);
+            const gridX = LEFT_MARGIN + (colIndex * COIN_SIZE);
+
+            // Boundary check
+            if (gridX < LEFT_MARGIN || gridX > RIGHT_MARGIN - COIN_SIZE) {
+                return null;
+            }
 
             for (let y = GROUND_Y; y >= 0; y -= COIN_SIZE) {
                 const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
