@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,25 +52,63 @@
            核心動畫定義
            ========================================= */
         @keyframes breathe-text {
-            0% { opacity: 0; transform: translateY(10px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes pulse-mic {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
         }
 
         @keyframes ripple-wave {
-            0% { transform: scale(1); opacity: 0.6; border-width: 4px; }
-            100% { transform: scale(3); opacity: 0; border-width: 0px; }
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+                border-width: 4px;
+            }
+
+            100% {
+                transform: scale(3);
+                opacity: 0;
+                border-width: 0px;
+            }
         }
 
         @keyframes print-wave {
-            0% { height: 10%; opacity: 0.3; }
-            50% { height: 100%; opacity: 0.8; }
-            100% { height: 10%; opacity: 0.3; }
+            0% {
+                height: 10%;
+                opacity: 0.3;
+            }
+
+            50% {
+                height: 100%;
+                opacity: 0.8;
+            }
+
+            100% {
+                height: 10%;
+                opacity: 0.3;
+            }
         }
 
         /* =========================================
@@ -83,9 +122,10 @@
             align-items: center;
             justify-content: center;
             padding: 40px;
-            /* 背景：黑色，符合整體像素風格 */
-            background-color: #000000; 
-            color: #FFB800; /* 黃字 */
+            /* 背景：暖黃色，保持平靜感與留白感 */
+            background-color: #FFB800;
+            color: #000000;
+            /* 黑字 */
             text-align: center;
             opacity: 0;
             transition: opacity 0.8s ease-in-out;
@@ -100,18 +140,21 @@
 
         /* 引導語文字：呼吸感、清晰易讀 */
         .guide-message .guide-text {
-            margin-bottom: 120px; /* 大量留白 */
-            color: #FFB800; /* 黃字 */
-            /* 修正：使用像素/等寬字體 */
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            margin-bottom: 120px;
+            /* 大量留白 */
+            color: #000000;
+            /* 黑字 */
+            /* 修正：使用清晰易讀的內文字體，非像素字 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             font-size: 32px;
             line-height: 1.8;
             font-weight: 400;
             letter-spacing: 0.05em;
             max-width: 800px;
-            
+
             /* 呼吸動畫：緩慢淡入 */
-            opacity: 0; /* 初始隱藏 */
+            opacity: 0;
+            /* 初始隱藏 */
             animation: breathe-text 4s ease-out forwards;
             animation-delay: 0.5s;
         }
@@ -151,7 +194,8 @@
             width: 64px;
             height: 64px;
             image-rendering: pixelated;
-            fill: #FFB800; /* 黃色 */
+            fill: #000000;
+            /* 黑字 */
             transition: all 0.3s ease;
         }
 
@@ -159,14 +203,17 @@
         .mic-container.idle .pixel-mic-icon {
             animation: pulse-mic 3s infinite ease-in-out;
             opacity: 0.7;
-            fill: #FFB800; /* 黃色 */
+            fill: #000000;
+            /* 黑色 */
         }
 
         /* 錄音狀態：麥克風反白 */
         .mic-container.recording .pixel-mic-icon {
-            fill: #ffffff; /* 白色 */
+            fill: #ffffff;
+            /* 白色 */
             opacity: 1;
-            animation: none; /* 停止呼吸動畫 */
+            animation: none;
+            /* 停止呼吸動畫 */
         }
 
         /* 錄音狀態：聲波動畫容器 */
@@ -191,7 +238,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border: 2px solid rgba(255, 184, 0, 0.4); /* 柔和暖黃 */
+            border: 2px solid rgba(255, 184, 0, 0.4);
+            /* 柔和暖黃 */
             border-radius: 50%;
             width: 100%;
             height: 100%;
@@ -206,14 +254,17 @@
            ========================================= */
         .print-notification {
             position: absolute;
-            inset: 0; /* 滿版覆蓋 */
+            inset: 0;
+            /* 滿版覆蓋 */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #000000; /* 全黑背景 */
+            background-color: rgba(28, 27, 25, 0.95);
+            /* 深色背景 */
             opacity: 0;
-            transition: opacity 1.5s ease-in-out; /* 慢速優雅過場 */
+            transition: opacity 1.5s ease-in-out;
+            /* 慢速優雅過場 */
             pointer-events: none;
             z-index: 100;
         }
@@ -260,21 +311,23 @@
         .print-notification .print-title {
             font-size: 28px;
             font-weight: 400;
-            color: #FFB800;
+            color: #e6e0d5;
             margin-bottom: 16px;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-family: -apple-system, sans-serif;
             letter-spacing: 2px;
         }
 
         .print-notification .print-message {
             font-size: 16px;
-            color: #FFB800;
-            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            color: #888;
+            font-family: -apple-system, sans-serif;
             line-height: 1.6;
         }
 
         /* 隱藏舊元素 */
-        .voice-indicator, .voice-dots, .voice-dot {
+        .voice-indicator,
+        .voice-dots,
+        .voice-dot {
             display: none;
         }
 
@@ -341,20 +394,20 @@
             opacity: 1;
         }
 
-        /* 針對引導語頁面（黑色背景）的適配 */
+        /* 針對引導語頁面（暖黃色背景）的適配 */
         .guide-message .lang-toggle-btn {
-            border-color: #FFB800;
-            color: #FFB800;
+            border-color: #000000;
+            color: #000000;
         }
 
         .guide-message .lang-toggle-btn:hover {
-            background-color: rgba(255, 184, 0, 0.1);
+            background-color: rgba(0, 0, 0, 0.1);
         }
 
         /* 針對列印通知頁面（暗色背景）的適配 */
         .print-notification .lang-toggle-btn {
-            border-color: #FFB800;
-            color: #FFB800;
+            border-color: #e6e0d5;
+            color: #e6e0d5;
         }
 
         .exit-fullscreen-btn:hover {
@@ -469,12 +522,12 @@
                 width: 100vw;
                 height: 100vh;
             }
-            
+
             .voice-indicator {
                 top: 40px;
                 right: 40px;
             }
-            
+
             .voice-dot {
                 width: 10px;
                 height: 10px;
@@ -506,15 +559,16 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="canvas-container">
             <canvas id="coinCanvas" class="coin-canvas"></canvas>
-            
+
             <!-- 引導語顯示 -->
             <div class="guide-message" id="guideMessage">
                 <div class="guide-text" id="guideText"></div>
-                
+
                 <!-- 新的麥克風互動區 -->
                 <div class="mic-container idle" id="micContainer">
                     <div class="mic-ripples" id="micRipples">
@@ -522,8 +576,9 @@
                     </div>
                     <!-- 像素麥克風 SVG -->
                     <svg class="pixel-mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                        <path
+                            d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     </svg>
                 </div>
 
@@ -564,7 +619,7 @@
         <div class="fullscreen-prompt" id="fullscreenPrompt">
             <!-- 語言切換按鈕 -->
             <button class="lang-toggle-btn" id="langToggleBtn">EN / 中</button>
-            
+
             <div class="fullscreen-prompt-content">
                 <div class="fullscreen-prompt-title">
                     <h2>DIARY</h2>
@@ -690,7 +745,7 @@
         let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
         let micContainerEl, micRipplesEl;
         let langToggleBtnEl; // 新增語言切換按鈕
-        
+
         // 音訊分析相關
         let audioContext;
         let analyser;
@@ -700,14 +755,14 @@
         // ====================================
         // 初始化
         // ====================================
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Canvas 初始化
             canvas = document.getElementById('coinCanvas');
             ctx = canvas.getContext('2d');
             canvas.width = 1080;
             canvas.height = 1920;
             ctx.imageSmoothingEnabled = false;
-            
+
             // UI 元素初始化
             guideMessageEl = document.getElementById('guideMessage');
             guideTextEl = document.getElementById('guideText');
@@ -718,41 +773,41 @@
             debugStateEl = document.getElementById('debugState');
             debugCoinsEl = document.getElementById('debugCoins');
             debugRecordingEl = document.getElementById('debugRecording');
-            
+
             // 新增的 UI 元素
             micContainerEl = document.getElementById('micContainer');
             micRipplesEl = document.getElementById('micRipples');
             langToggleBtnEl = document.getElementById('langToggleBtn');
             const splashSubtitleEl = document.getElementById('splashSubtitle');
-            
+
             // 設定語言切換互動
             setupLanguageToggle();
-            
+
             // 設定麥克風互動
             setupMicInteraction();
-            
+
             // 開始動畫
             startAnimation();
-            
+
             // 初始化系統狀態
             initializeSystem();
-            
+
             // 設定 Console 測試指令
             setupConsoleCommands();
-            
+
             // 設定全螢幕功能
             setupFullscreen();
-            
+
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
-        
+
         // 設定語言切換互動
         function setupLanguageToggle() {
-            langToggleBtnEl.addEventListener('click', function(e) {
+            langToggleBtnEl.addEventListener('click', function (e) {
                 e.stopPropagation(); // 避免觸發背景點擊
                 toggleLanguage();
             });
-            
+
             // 初始化按鈕文字
             updateInterfaceText();
         }
@@ -761,30 +816,30 @@
             AppState.language = AppState.language === 'zh-TW' ? 'en-US' : 'zh-TW';
             console.log('🌐 切換語言:', AppState.language);
             updateInterfaceText();
-            
+
             // 如果當前正在顯示引導語且非錄音中，重新載入引導語
             if (AppState.currentState === SystemState.IDLE && !AppState.isRecording) {
-                showDailyGuide(); 
+                showDailyGuide();
             }
         }
 
         function updateInterfaceText() {
             const t = i18n[AppState.language];
             langToggleBtnEl.textContent = t.langBtn;
-            
+
             // 更新初始畫面副標題
             const splashSubtitleEl = document.getElementById('splashSubtitle');
             if (splashSubtitleEl) {
                 splashSubtitleEl.textContent = t.splashSubtitle;
             }
-            
+
             // 更新引導語文字的語言類別（用於樣式調整）
             if (AppState.language === 'en-US') {
                 guideTextEl.classList.add('lang-en');
             } else {
                 guideTextEl.classList.remove('lang-en');
             }
-            
+
             // 更新列印相關文字 (如果在列印狀態)
             if (AppState.currentState === SystemState.PRINT_READY) {
                 // 注意：這裡只更新靜態部分，動態部分由觸發函數處理
@@ -798,12 +853,12 @@
         // 設定麥克風互動邏輯
         function setupMicInteraction() {
             // 點擊麥克風開始錄音
-            micContainerEl.addEventListener('click', function() {
+            micContainerEl.addEventListener('click', function () {
                 if (AppState.currentState === SystemState.IDLE && !AppState.isRecording) {
                     handleRecordingStart();
                 }
             });
-            
+
             // 注意：錄音結束由實體按鈕控制，會直接呼叫 handleRecordingEnd()
         }
 
@@ -816,23 +871,23 @@
                 // 清除畫布
                 ctx.fillStyle = '#000000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
+
                 // 繪製地面線
                 ctx.fillStyle = '#333333';
                 ctx.fillRect(LEFT_MARGIN, GROUND_Y, RIGHT_MARGIN - LEFT_MARGIN, 2);
-                
+
                 // （已移除）背景直條格線
-                
+
                 // 更新和繪製硬幣
                 coins.forEach((coin) => {
                     if (!coin.settled) {
                         // 應用重力
                         coin.velocityY += GRAVITY;
                         coin.y += coin.velocityY;
-                        
+
                         // 檢查是否應該落腳
                         const settlePos = findSettlePosition(coin.x, coin.y);
-                        
+
                         if (settlePos && coin.y >= settlePos.y - COIN_SIZE / 2) {
                             coin.x = settlePos.x;
                             coin.y = settlePos.y;
@@ -840,27 +895,27 @@
                             coin.velocityY = 0;
                         }
                     }
-                    
+
                     // 繪製硬幣
                     ctx.fillStyle = '#FFB800';
                     ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
                 });
-                
+
                 // 計算目前堆疊最高點
                 const highestTopY = getHighestStackTopY();
-                
+
                 // 使用固定高度觸發列印（約畫面的 20% 位置，即從頂部往下 20%）
                 const triggerY = canvas.height * 0.2; // 固定觸發高度
-                
+
                 // 當堆疊高度達到或超過觸發位置，觸發列印（僅一次）
                 if (!window.__printedRoundFlag && highestTopY !== null && highestTopY <= triggerY) {
                     window.__printedRoundFlag = true;
                     triggerPrintNotification();
                 }
-                
+
                 animationId = requestAnimationFrame(animate);
             }
-            
+
             animationId = requestAnimationFrame(animate);
         }
 
@@ -880,11 +935,11 @@
         function findSettlePosition(currentX, currentY) {
             // 網格化落腳，像俄羅斯方塊
             const gridX = Math.round(currentX / COIN_SIZE) * COIN_SIZE;
-            
+
             for (let y = GROUND_Y; y >= 0; y -= COIN_SIZE) {
                 const hasSupport = y >= GROUND_Y || isPositionOccupied(gridX, y + COIN_SIZE);
                 const isFree = !isPositionOccupied(gridX, y);
-                
+
                 if (isFree && hasSupport && currentY >= y - COIN_SIZE) {
                     return { x: gridX, y };
                 }
@@ -898,7 +953,7 @@
         function isScreenFilled() {
             const columns = Math.floor((RIGHT_MARGIN - LEFT_MARGIN) / COIN_SIZE);
             const heights = new Array(columns).fill(0);
-            
+
             // 計算每一欄的最高堆疊高度
             for (const coin of coins) {
                 if (!coin.settled) continue;
@@ -907,11 +962,11 @@
                 const topY = coin.y; // y 越小越靠上
                 heights[colIndex] = Math.max(heights[colIndex], (GROUND_Y - topY) + COIN_SIZE);
             }
-            
+
             // 若每一欄的高度都達到可視高度，視為填滿
             const requiredHeight = GROUND_Y; // 從 0 到地面視為可堆疊區域
             const allFilled = heights.every(h => h >= requiredHeight);
-            
+
             console.log('🧱 欄位高度:', heights, '是否填滿:', allFilled);
             return allFilled;
         }
@@ -933,19 +988,19 @@
             // 網格化隨機掉落，像俄羅斯方塊
             const availableWidth = RIGHT_MARGIN - LEFT_MARGIN - COIN_SIZE;
             const gridWidth = Math.floor(availableWidth / COIN_SIZE);
-            
+
             for (let i = 0; i < count; i++) {
                 // 隨機選擇網格位置
                 const randomGridX = Math.floor(Math.random() * gridWidth);
                 const gridX = LEFT_MARGIN + randomGridX * COIN_SIZE;
-                
+
                 const newCoin = new Coin(
                     gridX,
                     -COIN_SIZE * 2 - (i * COIN_SIZE * 0.8),
                     0,
                     COIN_SIZE
                 );
-                
+
                 coins.push(newCoin);
             }
         }
@@ -995,10 +1050,10 @@
             // 載入儲存的金幣數
             loadCoinsFromStorage();
             loadGuideScheduleFromStorage();
-            
+
             // 顯示當日引導語
             maybeShowScheduledGuide();
-            
+
             // 更新除錯資訊
             updateDebugInfo();
 
@@ -1018,7 +1073,7 @@
                 AppState.guideHour = obj.hour ?? AppState.guideHour;
                 AppState.guideMinute = obj.minute ?? AppState.guideMinute;
                 AppState.lastGuideShownDate = obj.lastDate ?? null;
-            } catch {}
+            } catch { }
         }
 
         function saveGuideScheduleToStorage() {
@@ -1054,9 +1109,9 @@
                 const resp = await fetch(`${API_BASE_URL}/api/generate-guide`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         userId: 'default-user',
-                        date: new Date().toISOString().slice(0,10),
+                        date: new Date().toISOString().slice(0, 10),
                         daysToAnalyze: 7,
                         language: AppState.language // 傳遞語言參數
                     })
@@ -1064,7 +1119,7 @@
                 if (!resp.ok) throw new Error('API 失敗');
                 const data = await resp.json();
                 let text = (data.guideText || '').trim();
-                
+
                 // 清理可能的 Markdown 格式和多餘文字
                 // 移除 "##"、"每日引導語"、"引導語："等前綴
                 text = text.replace(/^##\s*每日引導語[：:]\s*/i, '');
@@ -1075,23 +1130,23 @@
                 text = text.replace(/^["「『](.+?)["」』]$/, '$1');
                 // 移除多餘空白
                 text = text.trim();
-                
+
                 AppState.currentGuideText = text;
                 guideTextEl.textContent = text || t.guideFallback;
-                
+
                 // 設置語言類別（用於樣式調整）
                 if (AppState.language === 'en-US') {
                     guideTextEl.classList.add('lang-en');
                 } else {
                     guideTextEl.classList.remove('lang-en');
                 }
-                
+
                 // 重置動畫（重新觸發呼吸動畫）
                 guideTextEl.style.animation = 'none';
                 void guideTextEl.offsetWidth; // 強制重排
                 guideTextEl.style.animation = 'breathe-text 4s ease-out forwards';
                 guideTextEl.style.animationDelay = '0.5s';
-                
+
                 console.log(`📝 顯示引導語(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, text);
             } catch (e) {
                 console.error('取得引導語失敗，改用預設樣本：', e);
@@ -1099,14 +1154,14 @@
                 const fallback = t.guideFallback;
                 AppState.currentGuideText = fallback;
                 guideTextEl.textContent = fallback;
-                
+
                 // 設置語言類別（用於樣式調整）
                 if (AppState.language === 'en-US') {
                     guideTextEl.classList.add('lang-en');
                 } else {
                     guideTextEl.classList.remove('lang-en');
                 }
-                
+
                 guideMessageEl.classList.add('show');
             }
         }
@@ -1125,17 +1180,17 @@
 
         async function handleRecordingStart() {
             if (AppState.isRecording) return;
-            
+
             try {
                 // 請求麥克風權限
-                audioStream = await navigator.mediaDevices.getUserMedia({ 
+                audioStream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
                         sampleRate: 44100
-                    } 
+                    }
                 });
-                
+
                 // 設定音訊分析 (視覺化)
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
@@ -1143,35 +1198,35 @@
                 source.connect(analyser);
                 analyser.fftSize = 256;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
-                
+
                 // 啟動波紋動畫更新循環
                 startRippleAnimation();
-                
+
                 // 建立 MediaRecorder
                 mediaRecorder = new MediaRecorder(audioStream, {
                     mimeType: 'audio/webm;codecs=opus'
                 });
-                
+
                 audioChunks = [];
                 recordingStartTime = Date.now();
-                
+
                 mediaRecorder.addEventListener('dataavailable', event => {
                     audioChunks.push(event.data);
                 });
-                
+
                 mediaRecorder.start();
-                
+
                 AppState.isRecording = true;
                 AppState.currentState = SystemState.RECORDING;
-                
+
                 // 更新 UI：移除 idle，加入 recording
                 micContainerEl.classList.remove('idle');
                 micContainerEl.classList.add('recording');
-                
+
                 console.log('🎤 開始錄音...');
                 playSound('start');
                 updateDebugInfo();
-                
+
             } catch (error) {
                 console.error('❌ 無法存取麥克風:', error);
                 alert('無法存取麥克風，請檢查權限設定');
@@ -1181,50 +1236,50 @@
         // 波紋動畫邏輯
         function startRippleAnimation() {
             if (rippleInterval) clearInterval(rippleInterval);
-            
+
             // 每 100ms 檢查一次音量並產生波紋
             rippleInterval = setInterval(() => {
                 if (!AppState.isRecording || !analyser) return;
-                
+
                 analyser.getByteFrequencyData(dataArray);
-                
+
                 // 計算平均音量
                 let sum = 0;
-                for(let i = 0; i < dataArray.length; i++) {
+                for (let i = 0; i < dataArray.length; i++) {
                     sum += dataArray[i];
                 }
                 const average = sum / dataArray.length;
-                
+
                 // 如果音量超過閾值，產生波紋
                 if (average > 10) { // 閾值可調整
                     createRipple(average);
                 }
             }, 100);
         }
-        
+
         function createRipple(intensity) {
             const ripple = document.createElement('div');
             ripple.classList.add('ripple-circle');
-            
+
             // 根據音量調整大小與透明度
             const scale = 1 + (intensity / 50); // 調整擴散大小
             const opacity = Math.min(0.8, intensity / 100);
-            
+
             // 設定初始樣式
             ripple.style.width = '100%';
             ripple.style.height = '100%';
             ripple.style.opacity = opacity;
             ripple.style.transform = 'translate(-50%, -50%) scale(1)';
-            
+
             micRipplesEl.appendChild(ripple);
-            
+
             // 強制重繪以觸發 transition
             void ripple.offsetWidth;
-            
+
             // 執行動畫
             ripple.style.transform = `translate(-50%, -50%) scale(${scale * 2})`;
             ripple.style.opacity = '0';
-            
+
             // 清理 DOM
             setTimeout(() => {
                 if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
@@ -1233,59 +1288,59 @@
 
         async function handleRecordingEnd() {
             if (!AppState.isRecording || !mediaRecorder) return;
-            
+
             // 停止錄音狀態
             AppState.isRecording = false;
             AppState.currentState = SystemState.PROCESSING;
-            
+
             // 清除波紋動畫
             if (rippleInterval) {
                 clearInterval(rippleInterval);
                 rippleInterval = null;
             }
-            
+
             // 更新 UI：恢復 UI 狀態（立即恢復麥克風顏色）
             micContainerEl.classList.remove('recording');
             micContainerEl.classList.add('idle'); // 立即恢復為黑色和呼吸狀態
-            
+
             console.log('⏹️ 停止錄音，進入 5 秒緩衝...');
             playSound('end');
-            
+
             // 停止錄音
             mediaRecorder.stop();
-            
+
             // 5 秒緩衝等待（給用戶平靜的時間）
             setTimeout(() => {
-                 hideGuideMessage();
+                hideGuideMessage();
             }, 5000);
-            
+
             // 處理錄音數據 (此部分不變，在背景執行)
             mediaRecorder.addEventListener('stop', async () => {
                 const recordingDuration = Math.round((Date.now() - recordingStartTime) / 1000);
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                
+
                 // 停止音訊串流與 Context
                 audioStream.getTracks().forEach(track => track.stop());
                 if (audioContext) audioContext.close();
-                
+
                 // 處理錄音
                 await processRecording(audioBlob, recordingDuration);
             });
-            
+
             updateDebugInfo();
         }
 
         async function processRecording(audioBlob, duration) {
             try {
                 console.log('📤 上傳日記到伺服器...');
-                
+
                 // 將音訊轉為 base64（簡化方案，實際可上傳至 Firebase Storage）
                 const reader = new FileReader();
                 reader.readAsDataURL(audioBlob);
-                
+
                 reader.onloadend = async () => {
                     const audioData = reader.result; // dataURL base64
-                    
+
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
                             method: 'POST',
@@ -1298,12 +1353,12 @@
                                 date: new Date().toISOString()
                             })
                         });
-                        
+
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) {
                             throw new Error(data?.error || '儲存日記失敗');
                         }
-                        
+
                         console.log('✅ 日記已儲存:', data);
                     } catch (error) {
                         console.error('❌ 儲存日記失敗:', error);
@@ -1312,7 +1367,7 @@
                         // 確保至少等待 5 秒（從錄音結束開始算）
                         const elapsed = Date.now() - (recordingStartTime + duration * 1000);
                         const remainingWait = Math.max(0, 5000 - elapsed);
-                        
+
                         setTimeout(() => {
                             AppState.currentState = SystemState.REWARD;
                             giveReward();
@@ -1322,7 +1377,7 @@
                         }, remainingWait);
                     }
                 };
-                
+
             } catch (error) {
                 console.error('❌ 處理錄音失敗:', error);
                 // 即使失敗也給予獎勵（使用者體驗優先）
@@ -1343,21 +1398,21 @@
             const dropCount = 150;
             const durationMs = 6000; // 6 秒內分散掉落
             spawnCoinsStaggered(dropCount, durationMs);
-            
+
             // 更新金幣數（作為統計用途）
             AppState.totalCoins += dropCount;
             saveCoinsToStorage();
-            
+
             console.log(`💰 獲得 ${dropCount} 枚金幣（分散掉落）！總計:`, AppState.totalCoins);
-            
+
             // 列印觸發改由動畫迴圈根據堆疊高度偵測（達到白色點高度）
-            
+
             // 回到待機狀態
             setTimeout(() => {
                 AppState.currentState = SystemState.IDLE;
                 updateDebugInfo();
             }, durationMs + 2000);
-            
+
             updateDebugInfo();
         }
 
@@ -1367,40 +1422,40 @@
         function triggerPrintNotification() {
             AppState.currentState = SystemState.PRINT_READY;
             const t = i18n[AppState.language];
-            
+
             printMessageEl.innerHTML = t.printNotification.replace('${coins}', AppState.totalCoins);
             if (printTitleEl) printTitleEl.textContent = t.printNotificationTitle;
-            
+
             printNotificationEl.classList.add('show');
-            
+
             console.log('🎉 觸發列印通知！');
-            
+
             // TODO: 觸發實體列印
             executePrint();
-            
+
             // 5秒後隱藏通知
             setTimeout(() => {
                 hidePrintNotification();
             }, 5000);
-            
+
             updateDebugInfo();
         }
 
         function hidePrintNotification() {
             printNotificationEl.classList.remove('show');
-            
+
             // 重置金幣數
             AppState.totalCoins = 0;
             saveCoinsToStorage();
-            
+
             // 清空畫面上的金幣
             coins = [];
-            
+
             // 回到待機狀態
             AppState.currentState = SystemState.IDLE;
             // 允許下一回合再次觸發
             window.__printedRoundFlag = false;
-            
+
             updateDebugInfo();
         }
 
@@ -1410,10 +1465,10 @@
                 const resp = await fetch(`${API_BASE_URL}/api/generate-print`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         userId: 'default-user',
                         totalCoins: AppState.totalCoins,
-                        date: new Date().toISOString().slice(0,10),
+                        date: new Date().toISOString().slice(0, 10),
                         daysToAnalyze: 10,
                         language: AppState.language // 傳遞語言參數
                     })
@@ -1457,7 +1512,7 @@
         // ====================================
         function updateDebugInfo() {
             if (!AppState.debugMode) return;
-            
+
             debugStateEl.textContent = AppState.currentState;
             debugCoinsEl.textContent = AppState.totalCoins;
             debugRecordingEl.textContent = AppState.isRecording ? '是' : '否';
@@ -1471,7 +1526,7 @@
             const enterFullscreenBtn = document.getElementById('enterFullscreenBtn');
             const fullscreenPrompt = document.getElementById('fullscreenPrompt');
             const container = document.querySelector('.container');
-            
+
             // 進入全螢幕的函數
             async function enterFullscreen() {
                 try {
@@ -1492,7 +1547,7 @@
                     alert('無法進入全螢幕模式，請檢查瀏覽器權限設定');
                 }
             }
-            
+
             // 退出全螢幕的函數
             async function exitFullscreen() {
                 try {
@@ -1510,21 +1565,21 @@
                     console.error('❌ 無法退出全螢幕:', error);
                 }
             }
-            
+
             // 檢查是否在全螢幕模式
             function isFullscreen() {
-                return !!(document.fullscreenElement || 
-                         document.webkitFullscreenElement || 
-                         document.mozFullScreenElement || 
-                         document.msFullscreenElement);
+                return !!(document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement);
             }
-            
+
             // 點擊進入全螢幕按鈕
             enterFullscreenBtn.addEventListener('click', enterFullscreen);
-            
+
             // 點擊退出按鈕
             exitFullscreenBtn.addEventListener('click', exitFullscreen);
-            
+
             // 監聽全螢幕狀態變化
             function updateFullscreenState() {
                 const isFull = isFullscreen();
@@ -1537,12 +1592,12 @@
                 }
                 console.log('全螢幕狀態:', isFull ? '開啟' : '關閉');
             }
-            
+
             document.addEventListener('fullscreenchange', updateFullscreenState);
             document.addEventListener('webkitfullscreenchange', updateFullscreenState);
             document.addEventListener('mozfullscreenchange', updateFullscreenState);
             document.addEventListener('MSFullscreenChange', updateFullscreenState);
-            
+
             // ESC 鍵退出全螢幕（瀏覽器預設行為）
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && isFullscreen()) {
@@ -1558,12 +1613,12 @@
                     }
                 }
             });
-            
+
             // 檢查是否已經在全螢幕模式（例如從其他方式進入）
             if (isFullscreen()) {
                 fullscreenPrompt.classList.add('hidden');
             }
-            
+
             // 暴露給 Console 使用
             window.enterFullscreen = enterFullscreen;
             window.exitFullscreen = exitFullscreen;
@@ -1575,7 +1630,7 @@
         // ====================================
         function setupConsoleCommands() {
             // 全域測試函數
-            window.help = function() {
+            window.help = function () {
                 console.log(`
 ╔════════════════════════════════════════════════╗
 ║         🎮 Console 測試指令列表                ║
@@ -1602,36 +1657,36 @@
                 `);
             };
 
-            window.debug = function() {
+            window.debug = function () {
                 AppState.debugMode = !AppState.debugMode;
                 debugInfoEl.classList.toggle('show');
                 updateDebugInfo();
                 console.log('🐛 除錯模式:', AppState.debugMode ? '開啟' : '關閉');
             };
 
-            window.showGuide = function() {
+            window.showGuide = function () {
                 showDailyGuide();
             };
 
-            window.hideGuide = function() {
+            window.hideGuide = function () {
                 hideGuideMessage();
             };
 
-            window.startRecord = function() {
+            window.startRecord = function () {
                 handleRecordingStart();
             };
 
-            window.stopRecord = function() {
+            window.stopRecord = function () {
                 handleRecordingEnd();
             };
 
-            window.addCoins = function(count = 150, durationMs = 6000) {
+            window.addCoins = function (count = 150, durationMs = 6000) {
                 AppState.totalCoins += count;
                 saveCoinsToStorage();
                 spawnCoinsStaggered(count, durationMs);
                 updateDebugInfo();
                 console.log(`💰 增加 ${count} 枚金幣（分散 ${durationMs}ms）！總計: ${AppState.totalCoins}`);
-                
+
                 setTimeout(() => {
                     if (isScreenFilled()) {
                         console.log('🎉 畫面已填滿，準備列印');
@@ -1639,15 +1694,15 @@
                 }, durationMs + 1500);
             };
 
-            window.showPrint = function() {
+            window.showPrint = function () {
                 triggerPrintNotification();
             };
 
-            window.hidePrint = function() {
+            window.hidePrint = function () {
                 hidePrintNotification();
             };
 
-            window.resetCoins = function() {
+            window.resetCoins = function () {
                 AppState.totalCoins = 0;
                 saveCoinsToStorage();
                 coins = [];
@@ -1655,7 +1710,7 @@
                 console.log('🔄 金幣數已重置');
             };
 
-            window.getState = function() {
+            window.getState = function () {
                 console.log('📊 當前狀態:', {
                     state: AppState.currentState,
                     totalCoins: AppState.totalCoins,
@@ -1666,38 +1721,38 @@
                 return AppState;
             };
 
-            window.setThreshold = function(n) {
+            window.setThreshold = function (n) {
                 AppState.coinThreshold = n;
                 document.getElementById('debugTarget').textContent = n;
                 console.log(`🎯 列印門檻設定為: ${n}`);
             };
 
             // ===== 引導語排程 =====
-            window.setGuide = function(h = 22, m = 0) {
+            window.setGuide = function (h = 22, m = 0) {
                 AppState.guideHour = Math.max(0, Math.min(23, parseInt(h, 10)));
                 AppState.guideMinute = Math.max(0, Math.min(59, parseInt(m, 10)));
                 saveGuideScheduleToStorage();
-                console.log(`🕙 引導語時間設定為：${AppState.guideHour.toString().padStart(2,'0')}:${AppState.guideMinute.toString().padStart(2,'0')}`);
+                console.log(`🕙 引導語時間設定為：${AppState.guideHour.toString().padStart(2, '0')}:${AppState.guideMinute.toString().padStart(2, '0')}`);
             };
 
-            window.enableGuide = function(enabled = true) {
+            window.enableGuide = function (enabled = true) {
                 AppState.guideEnabled = !!enabled;
                 saveGuideScheduleToStorage();
                 console.log(`🧭 引導語排程：${AppState.guideEnabled ? '啟用' : '關閉'}`);
             };
 
-            window.checkGuideNow = function() {
+            window.checkGuideNow = function () {
                 maybeShowScheduledGuide();
             };
 
-            window.resetGuideToday = function() {
+            window.resetGuideToday = function () {
                 AppState.lastGuideShownDate = null;
                 saveGuideScheduleToStorage();
                 console.log('🔄 已清除今日引導語顯示記錄');
             };
 
             // 全螢幕相關指令
-            window.enterFullscreen = function() {
+            window.enterFullscreen = function () {
                 const container = document.querySelector('.container');
                 if (container.requestFullscreen) {
                     container.requestFullscreen();
@@ -1710,7 +1765,7 @@
                 }
             };
 
-            window.exitFullscreen = function() {
+            window.exitFullscreen = function () {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {
@@ -1733,4 +1788,5 @@
         window.addEventListener('beforeunload', cleanup);
     </script>
 </body>
+
 </html>
