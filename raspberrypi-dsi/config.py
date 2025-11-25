@@ -6,6 +6,14 @@ WakeUpMap - 樹莓派4B DSI螢幕版本配置檔案
 
 import os
 
+
+def _env_bool(key: str, default: bool = False) -> bool:
+    """讀取布林環境變數"""
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
 # =============================================================================
 # 硬體配置
 # =============================================================================
@@ -83,6 +91,40 @@ TTS_CONFIG = {
     # 禁用備用引擎
     'disable_fallback': True,  # 禁用所有備用語音引擎
     'require_openai': True,  # 強制要求 OpenAI API
+}
+
+# 麥克風輸入 / 語音紀錄配置
+MICROPHONE_CONFIG = {
+    'device': os.getenv('MIC_DEVICE', 'plughw:2,0'),  # INMP441 常見為 plughw:2,0
+    'format': os.getenv('MIC_SAMPLE_FORMAT', 'S32_LE'),  # INMP441 建議使用 32bit
+    'sample_rate': int(os.getenv('MIC_SAMPLE_RATE', '16000')),
+    'channels': int(os.getenv('MIC_CHANNELS', '1')),
+    'max_duration': int(os.getenv('MIC_MAX_DURATION', '20')),  # 最長錄音秒數
+    'target_sample_rate': int(os.getenv('MIC_TARGET_SAMPLE_RATE', '16000')),
+    'target_sample_format': os.getenv('MIC_TARGET_SAMPLE_FORMAT', 's16'),
+    'work_dir': os.getenv('MIC_WORK_DIR', '/tmp/pi_voice_input'),
+    'keep_raw_recording': _env_bool('MIC_KEEP_RAW', False),
+    'keep_processed_recording': _env_bool('MIC_KEEP_PROCESSED', False),
+}
+
+# 語音轉文字配置
+SPEECH_TO_TEXT_CONFIG = {
+    'api_key': os.getenv('OPENAI_STT_API_KEY', os.getenv('OPENAI_API_KEY', '')),
+    'primary_model': os.getenv('OPENAI_STT_MODEL', 'gpt-4o-mini-transcribe'),
+    'fallback_model': os.getenv('OPENAI_STT_FALLBACK_MODEL', 'whisper-1'),
+    'language_hint': os.getenv('OPENAI_STT_LANGUAGE', 'zh'),
+    'temperature': float(os.getenv('OPENAI_STT_TEMPERATURE', '0')),
+    'prompt': os.getenv('OPENAI_STT_PROMPT', ''),
+    'verbose_json': _env_bool('OPENAI_STT_VERBOSE_JSON', True),
+}
+
+# 語音日記 / Firebase API 配置
+VOICE_DIARY_CONFIG = {
+    'api_url': os.getenv('VOICE_DIARY_API_URL', 'https://yuhsiang.vercel.app/api/save-diary'),
+    'user_id': os.getenv('VOICE_DIARY_USER_ID', os.getenv('USER_NAME', 'unknown')),
+    'mode': os.getenv('VOICE_DIARY_MODE', 'stt'),
+    'timeout': int(os.getenv('VOICE_DIARY_TIMEOUT', '20')),
+    'attach_audio': _env_bool('VOICE_DIARY_ATTACH_AUDIO', False),
 }
 
 # =============================================================================

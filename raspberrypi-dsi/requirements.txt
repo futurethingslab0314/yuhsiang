@@ -9,9 +9,10 @@ requests>=2.25.1
 # 系統監控
 psutil>=5.8.0
 
-# 音頻處理
+# 音頻處理 / AI 服務
 pyttsx3>=2.90        # TTS文字轉語音引擎
 pygame>=2.0.0        # 音頻播放和混音
+openai>=1.13.0       # OpenAI TTS/STT API
 
 # 網頁自動化 (網頁模式專用)
 selenium>=4.15.0     # 瀏覽器自動化控制
