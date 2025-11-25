@@ -6,7 +6,8 @@ console.log('按 Ctrl+C 退出');
 
 try {
     // 設定 GPIO 18 為輸入，監聽 'both' (按下和放開)
-    const button = new Gpio(18, 'in', 'both', { debounceTimeout: 10 });
+    // 移除 debounceTimeout 以避免 EINVAL 錯誤
+    const button = new Gpio(18, 'in', 'both');
 
     button.watch((err, value) => {
         if (err) {
