@@ -155,9 +155,10 @@
             font-weight: 400;
             letter-spacing: 0.05em;
             letter-spacing: 0.05em;
+            width: 100%;
+            /* Ensure full width for centering */
             max-width: 800px;
             text-align: center;
-            /* Ensure text is centered */
             margin-left: auto;
             margin-right: auto;
 
@@ -220,7 +221,10 @@
         /* 錄音狀態：麥克風反白 */
         /* 錄音狀態：顯示麥克風 */
         /* 錄音狀態：顯示麥克風 */
+        /* 錄音狀態：顯示麥克風 */
         .mic-container.recording .pixel-mic-icon {
+            display: block !important;
+            /* Ensure it's rendered */
             fill: #FFB800;
             /* 黃色 */
             opacity: 1 !important;
