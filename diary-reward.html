@@ -1045,8 +1045,8 @@
         // 生成硬幣（同步生成）
         function spawnCoins(count = 30) {
             // 網格化隨機掉落，像俄羅斯方塊
-            const availableWidth = RIGHT_MARGIN - LEFT_MARGIN - COIN_SIZE;
-            const gridWidth = Math.floor(availableWidth / COIN_SIZE);
+            const availableWidth = RIGHT_MARGIN - LEFT_MARGIN;
+            const gridWidth = Math.round(availableWidth / COIN_SIZE);
 
             for (let i = 0; i < count; i++) {
                 // 隨機選擇網格位置
