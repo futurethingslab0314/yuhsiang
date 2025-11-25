@@ -126,7 +126,7 @@
             justify-content: center;
             padding: 40px;
             /* 背景：暖黃色，保持平靜感與留白感 */
-            background-color: #FFB800;
+            background-color: #FFAB00;
             color: #000000;
             /* 黑字 */
             text-align: center;
@@ -204,7 +204,7 @@
             width: 64px;
             height: 64px;
             image-rendering: pixelated;
-            fill: #FFB800;
+            fill: #FFAB00;
             transition: all 0.3s ease;
         }
 
@@ -213,7 +213,7 @@
         .mic-container.idle .pixel-mic-icon {
             opacity: 0;
             /* 隱藏 */
-            fill: #FFB800;
+            fill: #FFAB00;
             /* 預備顏色，雖然隱藏了但保持一致 */
             transform: scale(0.8);
         }
@@ -273,7 +273,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border: 2px solid rgba(255, 184, 0, 0.4);
+            border: 2px solid rgba(255, 171, 0, 0.4);
             /* 柔和暖黃 */
             border-radius: 50%;
             width: 100%;
@@ -338,7 +338,7 @@
 
         .sound-bar {
             width: 6px;
-            background-color: #FFB800;
+            background-color: #FFAB00;
             border-radius: 3px;
             animation: print-wave 0.8s infinite ease-in-out;
         }
@@ -506,7 +506,7 @@
         .fullscreen-prompt-title h2 {
             font-size: clamp(48px, 8vw, 120px);
             font-weight: bold;
-            color: #FFB800;
+            color: #FFAB00;
             margin: 0;
             line-height: 1.1;
             letter-spacing: clamp(2px, 0.5vw, 8px);
@@ -537,7 +537,7 @@
             background-color: transparent;
             transform: scale(1.1);
             /* Slightly less scaling for block */
-            filter: drop-shadow(0 0 10px rgba(255, 184, 0, 0.8));
+            filter: drop-shadow(0 0 10px rgba(255, 171, 0, 0.8));
             /* Glow effect */
         }
 
@@ -549,7 +549,7 @@
             content: '';
             width: 0;
             height: 0;
-            border-left: clamp(20px, 3vw, 40px) solid #FFB800;
+            border-left: clamp(20px, 3vw, 40px) solid #FFAB00;
             border-top: clamp(14px, 2vw, 28px) solid transparent;
             border-bottom: clamp(14px, 2vw, 28px) solid transparent;
             margin-left: clamp(4px, 0.5vw, 8px);
@@ -948,7 +948,7 @@
                     }
 
                     // 繪製硬幣
-                    ctx.fillStyle = '#FFB800';
+                    ctx.fillStyle = '#FFAB00';
                     ctx.fillRect(Math.floor(coin.x), Math.floor(coin.y), coin.size, coin.size);
                 });
 
