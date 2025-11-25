@@ -143,7 +143,7 @@
 
         /* 引導語文字：呼吸感、清晰易讀 */
         .guide-message .guide-text {
-            margin-bottom: 120px;
+            margin-bottom: 0;
             /* 大量留白 */
             color: #000000;
             /* 黑字 */
@@ -1785,6 +1785,15 @@
                 AppState.lastGuideShownDate = null;
                 saveGuideScheduleToStorage();
                 console.log('🔄 已清除今日引導語顯示記錄');
+            };
+
+            window.startRecord = function () {
+                if (AppState.currentState === SystemState.IDLE) {
+                    handleRecordingStart();
+                    console.log('🎤 透過 Console 觸發錄音');
+                } else {
+                    console.warn('⚠️ 目前狀態無法錄音:', AppState.currentState);
+                }
             };
 
             // 全螢幕相關指令
