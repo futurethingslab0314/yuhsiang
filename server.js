@@ -3,13 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
 
-// 嘗試載入 onoff，如果在非 Linux 環境（如 Mac）則略過
-let Gpio;
-try {
-  Gpio = require('onoff').Gpio;
-} catch (e) {
-  console.log('⚠️ onoff module not found or not supported. GPIO features disabled.');
-}
+const { spawn } = require('child_process');
+
+// 移除 onoff 引用，改用 gpiomon
+// let Gpio;
+// try {
+//   Gpio = require('onoff').Gpio;
+// } catch (e) { ... }
 
 // 手動載入 .env 檔案
 const envFile = path.join(__dirname, '.env');
@@ -202,39 +202,54 @@ function broadcast(data) {
 // ==========================================
 // GPIO Button Setup (GPIO 18)
 // ==========================================
-if (Gpio) {
-  try {
-    // GPIO 18, Input, Both edges (falling/rising) for debounce handling
-    // 使用 debounceTimeout 避免抖動
-    const button = new Gpio(18, 'in', 'falling', { debounceTimeout: 20 });
+// ==========================================
+// GPIO Button Setup (Using gpiomon)
+// ==========================================
+function startGpioMonitor() {
+  // 使用 gpiomon 監聽 GPIO 18 (gpiochip4 是 RPi 4 的預設)
+  // -n 1 代表只監聽一個事件就退出？不，我們要持續監聽
+  // gpiomon 預設會持續輸出
+  const gpiomon = spawn('gpiomon', ['gpiochip4', '18']);
 
-    console.log('🔘 GPIO 18 Button Initialized');
+  console.log('🔘 GPIO Monitor Started (gpiomon gpiochip4 18)');
 
-    button.watch((err, value) => {
-      if (err) {
-        console.error('❌ GPIO Error:', err);
-        return;
-      }
+  let lastClickTime = 0;
+  const DEBOUNCE_TIME = 300; // 300ms 防彈跳
 
-      // value 0 = Pressed (Falling edge, assuming pull-up)
-      // value 1 = Released
-      if (value === 0) {
-        console.log('🔘 Physical Button Pressed!');
+  gpiomon.stdout.on('data', (data) => {
+    const output = data.toString();
+    // 偵測 FALLING_EDGE (按下)
+    if (output.includes('FALLING_EDGE')) {
+      const now = Date.now();
+      if (now - lastClickTime > DEBOUNCE_TIME) {
+        console.log('🔘 Physical Button Pressed! (via gpiomon)');
         broadcast({ type: 'BUTTON_CLICK' });
+        lastClickTime = now;
       }
-    });
+    }
+  });
 
-    // 程式結束時釋放資源
-    process.on('SIGINT', () => {
-      button.unexport();
-      process.exit();
-    });
+  gpiomon.stderr.on('data', (data) => {
+    console.error(`GPIO Error: ${data}`);
+  });
 
-  } catch (error) {
-    console.error('❌ Failed to initialize GPIO:', error.message);
-  }
+  gpiomon.on('close', (code) => {
+    console.log(`GPIO Monitor exited with code ${code}`);
+    // 如果意外退出，可以嘗試重啟，但這裡先不處理
+  });
+
+  // 程式結束時殺死子進程
+  process.on('SIGINT', () => {
+    gpiomon.kill();
+    process.exit();
+  });
+}
+
+// 嘗試啟動 GPIO 監聽 (只在 Linux/RPi 上)
+if (process.platform === 'linux') {
+  startGpioMonitor();
 } else {
-  console.log('⚠️ GPIO simulation mode: Use /api/simulate-button to trigger button click');
+  console.log('⚠️ Non-Linux detected, skipping GPIO monitor.');
 }
 
 server.listen(PORT, '0.0.0.0', () => {
