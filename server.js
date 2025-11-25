@@ -5,11 +5,12 @@ const WebSocket = require('ws');
 
 const { spawn } = require('child_process');
 
-// 移除 onoff 引用，改用 gpiomon
-// let Gpio;
-// try {
-//   Gpio = require('onoff').Gpio;
-// } catch (e) { ... }
+let gpiod;
+try {
+  gpiod = require('node-libgpiod');
+} catch (e) {
+  console.log('⚠️ node-libgpiod module not found. GPIO features disabled.');
+}
 
 // 手動載入 .env 檔案
 const envFile = path.join(__dirname, '.env');
@@ -203,46 +204,46 @@ function broadcast(data) {
 // GPIO Button Setup (GPIO 18)
 // ==========================================
 // ==========================================
-// GPIO Button Setup (Using gpiomon)
+// GPIO Button Setup (Using node-libgpiod)
 // ==========================================
 function startGpioMonitor() {
-  // 使用 gpiomon 監聽 GPIO 18 (gpiochip4 是 RPi 4 的預設)
-  // -n 1 代表只監聽一個事件就退出？不，我們要持續監聽
-  // gpiomon 預設會持續輸出
-  const gpiomon = spawn('gpiomon', ['gpiochip4', '18']);
+  if (!gpiod) return;
 
-  console.log('🔘 GPIO Monitor Started (gpiomon gpiochip4 18)');
+  const GPIO_CHIP_NAME = 'gpiochip4'; // RPi 4 default
+  const BUTTON_PIN = 18;
+  const DEBOUNCE_TIME = 300; // 300ms
 
-  let lastClickTime = 0;
-  const DEBOUNCE_TIME = 300; // 300ms 防彈跳
+  try {
+    const chip = new gpiod.Chip(GPIO_CHIP_NAME);
+    const buttonLine = chip.getLine(BUTTON_PIN);
 
-  gpiomon.stdout.on('data', (data) => {
-    const output = data.toString();
-    // 偵測 FALLING_EDGE (按下)
-    if (output.includes('FALLING_EDGE')) {
-      const now = Date.now();
-      if (now - lastClickTime > DEBOUNCE_TIME) {
-        console.log('🔘 Physical Button Pressed! (via gpiomon)');
-        broadcast({ type: 'BUTTON_CLICK' });
-        lastClickTime = now;
+    // Request input mode with Pull-Up bias
+    buttonLine.requestInputModeFlags("gpio-basic", gpiod.LineFlags.GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP);
+
+    console.log(`🔘 GPIO Monitor Started (node-libgpiod on ${GPIO_CHIP_NAME} pin ${BUTTON_PIN})`);
+
+    let lastClickTime = 0;
+    let lastValue = 1; // Assume 1 (High) is released due to Pull-Up
+
+    // Polling interval (50ms for responsiveness)
+    setInterval(() => {
+      const value = buttonLine.getValue(); // 0 = Pressed, 1 = Released
+
+      // Detect Falling Edge (1 -> 0)
+      if (value === 0 && lastValue === 1) {
+        const now = Date.now();
+        if (now - lastClickTime > DEBOUNCE_TIME) {
+          console.log('🔘 Physical Button Pressed! (via node-libgpiod)');
+          broadcast({ type: 'BUTTON_CLICK' });
+          lastClickTime = now;
+        }
       }
-    }
-  });
+      lastValue = value;
+    }, 50);
 
-  gpiomon.stderr.on('data', (data) => {
-    console.error(`GPIO Error: ${data}`);
-  });
-
-  gpiomon.on('close', (code) => {
-    console.log(`GPIO Monitor exited with code ${code}`);
-    // 如果意外退出，可以嘗試重啟，但這裡先不處理
-  });
-
-  // 程式結束時殺死子進程
-  process.on('SIGINT', () => {
-    gpiomon.kill();
-    process.exit();
-  });
+  } catch (error) {
+    console.error('❌ Failed to initialize GPIO with node-libgpiod:', error.message);
+  }
 }
 
 // 嘗試啟動 GPIO 監聽 (只在 Linux/RPi 上)
