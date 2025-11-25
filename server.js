@@ -1,6 +1,15 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const WebSocket = require('ws');
+
+// 嘗試載入 onoff，如果在非 Linux 環境（如 Mac）則略過
+let Gpio;
+try {
+  Gpio = require('onoff').Gpio;
+} catch (e) {
+  console.log('⚠️ onoff module not found or not supported. GPIO features disabled.');
+}
 
 // 手動載入 .env 檔案
 const envFile = path.join(__dirname, '.env');
@@ -56,7 +65,7 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify({ error: 'API not found' }));
           return;
         }
-        
+
         // 解析請求 body
         let requestBody = {};
         if (body) {
@@ -66,19 +75,19 @@ const server = http.createServer(async (req, res) => {
             console.log('⚠️ Body 解析失敗，使用空物件');
           }
         }
-        
+
         const mockReq = {
           method: req.method,
           body: requestBody,
           headers: req.headers
         };
-        
+
         let responseSent = false;
         const mockRes = {
           statusCode: 200,
           headers: {},
-          setHeader: (key, value) => { 
-            if (!responseSent) res.setHeader(key, value); 
+          setHeader: (key, value) => {
+            if (!responseSent) res.setHeader(key, value);
           },
           writeHead: (code, headers) => {
             if (!responseSent) {
@@ -111,21 +120,21 @@ const server = http.createServer(async (req, res) => {
             }
           }
         };
-        
+
         await handler(mockReq, mockRes);
-        
+
         // 如果 handler 沒有發送回應
         if (!responseSent) {
           res.writeHead(mockRes.statusCode || 200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ message: 'No response from handler' }));
         }
-        
+
       } catch (error) {
         console.error('❌ API 錯誤:', error.message);
         console.error('❌ 完整錯誤:', error);
         if (!responseSent) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ 
+          res.end(JSON.stringify({
             error: error.message,
             stack: error.stack
           }));
@@ -137,7 +146,7 @@ const server = http.createServer(async (req, res) => {
 
   // 靜態檔案服務
   let filePath = path.join(__dirname, pathname === '/' ? 'diary-reward.html' : pathname);
-  
+
   // 安全性檢查
   if (!filePath.startsWith(__dirname)) {
     res.writeHead(403);
@@ -167,6 +176,66 @@ const server = http.createServer(async (req, res) => {
     fs.createReadStream(filePath).pipe(res);
   });
 });
+
+// ==========================================
+// WebSocket Server Setup
+// ==========================================
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  console.log('🔌 WebSocket Client Connected');
+
+  ws.on('close', () => {
+    console.log('🔌 WebSocket Client Disconnected');
+  });
+});
+
+// 廣播訊息給所有連接的客戶端
+function broadcast(data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
+
+// ==========================================
+// GPIO Button Setup (GPIO 18)
+// ==========================================
+if (Gpio) {
+  try {
+    // GPIO 18, Input, Both edges (falling/rising) for debounce handling
+    // 使用 debounceTimeout 避免抖動
+    const button = new Gpio(18, 'in', 'falling', { debounceTimeout: 20 });
+
+    console.log('🔘 GPIO 18 Button Initialized');
+
+    button.watch((err, value) => {
+      if (err) {
+        console.error('❌ GPIO Error:', err);
+        return;
+      }
+
+      // value 0 = Pressed (Falling edge, assuming pull-up)
+      // value 1 = Released
+      if (value === 0) {
+        console.log('🔘 Physical Button Pressed!');
+        broadcast({ type: 'BUTTON_CLICK' });
+      }
+    });
+
+    // 程式結束時釋放資源
+    process.on('SIGINT', () => {
+      button.unexport();
+      process.exit();
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to initialize GPIO:', error.message);
+  }
+} else {
+  console.log('⚠️ GPIO simulation mode: Use /api/simulate-button to trigger button click');
+}
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 伺服器已啟動！`);

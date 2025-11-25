@@ -849,6 +849,9 @@
             // 設定全螢幕功能
             setupFullscreen();
 
+            // 設定 WebSocket 連線 (GPIO 按鈕控制)
+            setupWebSocket();
+
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
 
@@ -1844,6 +1847,70 @@
                     document.msExitFullscreen();
                 }
             };
+        }
+
+        // ====================================
+        // WebSocket Client (GPIO Button)
+        // ====================================
+        function setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname === 'localhost' ? 'localhost:3000' : window.location.host;
+            // 如果是 file:// 開啟，預設連線到 localhost:3000
+            const wsUrl = window.location.protocol === 'file:' ? 'ws://localhost:3000' : `${protocol}//${host}`;
+
+            console.log('🔌 嘗試連線 WebSocket:', wsUrl);
+
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket 連線成功');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'BUTTON_CLICK') {
+                        console.log('🔘 收到實體按鈕訊號');
+                        handlePhysicalButtonPress();
+                    }
+                } catch (e) {
+                    console.error('WebSocket 訊息解析失敗:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('⚠️ WebSocket 連線斷開，5秒後重試...');
+                setTimeout(setupWebSocket, 5000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('❌ WebSocket 錯誤:', err);
+                ws.close();
+            };
+        }
+
+        function handlePhysicalButtonPress() {
+            // 邏輯：
+            // 1. 待機狀態 (IDLE) 且 引導語未顯示 -> 顯示引導語
+            // 2. 待機狀態 (IDLE) 且 引導語已顯示 -> 開始錄音
+            // 3. 錄音狀態 (RECORDING) -> 停止錄音
+
+            if (AppState.currentState === SystemState.IDLE) {
+                const guideVisible = guideMessageEl.classList.contains('show');
+
+                if (!guideVisible) {
+                    console.log('🔘 按鈕觸發：顯示引導語');
+                    showDailyGuide();
+                } else {
+                    console.log('🔘 按鈕觸發：開始錄音');
+                    handleRecordingStart();
+                }
+            } else if (AppState.currentState === SystemState.RECORDING) {
+                console.log('🔘 按鈕觸發：停止錄音');
+                handleRecordingEnd();
+            } else {
+                console.log('⚠️ 目前狀態忽略按鈕:', AppState.currentState);
+            }
         }
 
         // 清理函數
