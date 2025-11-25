@@ -281,8 +281,8 @@
         .print-icon-container {
             position: relative;
             width: 120px;
-            height: 120px;
-            margin-bottom: 40px;
+            height: 60px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -296,7 +296,7 @@
         /* 模擬打印機聲音波形 */
         .print-sound-waves {
             position: absolute;
-            bottom: -40px;
+            bottom: 0;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -608,7 +608,6 @@
             <!-- 列印提示 -->
             <div class="print-notification" id="printNotification">
                 <div class="print-icon-container">
-                    <div class="print-icon">📄</div>
                     <!-- 模擬列印聲波 -->
                     <div class="print-sound-waves">
                         <div class="sound-bar" style="animation-delay: 0s; height: 20px;"></div>
