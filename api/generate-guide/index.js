@@ -164,18 +164,19 @@ Target Language: ${targetLang}
 
 5. **開放性與安全性：** 允許用戶不回答或回答不知道。必須讓用戶感覺「可以說，也可以不說」。
 
-# Output Format
-
-**重要：** 直接輸出引導語句，不要包含：
-- Markdown 格式（如 ##、**、*）
-- 標題文字（如「每日引導語」、「引導語：」）
-- 引號（「」、""、''）
-- 任何前綴或後綴說明文字
-
-只輸出純文字引導語，使用語言：${targetLang}。
+6. **Strict Output Control (Critical):**
+   - **Do NOT** explain your reasoning.
+   - **Do NOT** mention the chosen strategy (e.g., "In this case...", "I suggest...").
+   - **Do NOT** use prefixes like "Guide:", "Suggestion:", or "Output:".
+   - **ONLY** output the final guiding phrase itself.
 
 # Input Data (User Context)
-${userContext}`;
+${userContext}
+
+# Output Format
+
+**重要：** 直接輸出引導語句，不要包含任何其他文字。
+只輸出純文字引導語，使用語言：${targetLang}。`;
 
         const completion = await openai.chat.completions.create({
             model: 'gpt-3.5-turbo',
