@@ -78,7 +78,7 @@ sudo ufw status
 ps aux | grep main_web_dsi
 
 # 2. 檢查按鈕接線
-# 確認按鈕連接到 GPIO18 和 GND
+# 確認按鈕連接到 GPIO 23 和 GND
 
 # 3. 測試 GPIO 權限
 sudo usermod -a -G gpio $USER
@@ -92,8 +92,8 @@ sudo systemctl start pigpiod  # 如果未啟動
 python3 -c "
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-print('GPIO18 狀態:', 'HIGH' if GPIO.input(18) else 'LOW')
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+print('GPIO23 狀態:', 'HIGH' if GPIO.input(23) else 'LOW')
 GPIO.cleanup()
 "
 ```
@@ -172,17 +172,17 @@ cd wakeupmap-pi
 
 ```bash
 # 1. 檢查按鈕硬體連接
-# 確認按鈕已正確連接到 GPIO 18 (實體針腳 12) 和 GND
+# 確認按鈕已正確連接到 GPIO 23 (實體針腳 16) 和 GND
 
 # 2. 測試 GPIO 按鈕電路
 python3 -c "
 import RPi.GPIO as GPIO
 import time
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-print('🔘 GPIO 18 按鈕測試 - 請按下按鈕...')
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+print('🔘 GPIO 23 按鈕測試 - 請按下按鈕...')
 for i in range(20):
-    if GPIO.input(18) == GPIO.LOW:
+    if GPIO.input(23) == GPIO.LOW:
         print('✅ 按鈕觸發成功！電路連接正常')
         break
     time.sleep(0.5)
@@ -198,7 +198,7 @@ source venv/bin/activate
 python3 main_web_dsi.py --test  # 測試模式
 
 # 4. 常見接線問題排除：
-# - 確認按鈕連接到 GPIO 18 (針腳 12)，不是其他針腳
+# - 確認按鈕連接到 GPIO 23 (針腳 16)，不是其他針腳
 # - 確認另一端連接到 GND (針腳 6, 9, 14, 20, 25, 30, 34, 39 任一個)
 # - 確認使用瞬時按鈕 (momentary switch)，不是切換開關 (toggle switch)
 # - 確認接線穩固，沒有鬆脫

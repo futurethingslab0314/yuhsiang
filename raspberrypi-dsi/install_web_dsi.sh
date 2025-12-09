@@ -384,7 +384,7 @@ show_post_install_info() {
     echo "=================== 接下來的步驟 ==================="
     echo
     echo "1. 硬體連接："
-    echo "   - 按鈕：GPIO 18 → 按鈕 → GND"
+    echo "   - 按鈕：GPIO 23 → 按鈕 → GND"
     echo "   - LED：GPIO 16 → 限流電阻 → LED → GND"
     echo "   - DSI螢幕：連接到DSI接口"
     echo

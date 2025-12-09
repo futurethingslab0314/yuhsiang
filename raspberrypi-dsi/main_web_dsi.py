@@ -854,7 +854,7 @@ def main():
     
     logger.info("甦醒地圖網頁模式啟動中...")
     print("甦醒地圖網頁模式")
-    print("請確保按鈕已連接到 GPIO 18")
+    print("請確保按鈕已連接到 GPIO 23")
     
     try:
         # 創建並運行應用程式

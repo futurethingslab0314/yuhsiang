@@ -201,7 +201,7 @@ function broadcast(data) {
 }
 
 // ==========================================
-// GPIO Button Setup (GPIO 18)
+// GPIO Button Setup (GPIO 23)
 // ==========================================
 // ==========================================
 // GPIO Button Setup (Using node-libgpiod)
@@ -210,7 +210,7 @@ function startGpioMonitor() {
   if (!gpiod) return;
 
   const GPIO_CHIP_NAME = 'gpiochip4'; // RPi 4 default
-  const BUTTON_PIN = 18;
+  const BUTTON_PIN = 23;
   const DEBOUNCE_TIME = 300; // 300ms
 
   try {
