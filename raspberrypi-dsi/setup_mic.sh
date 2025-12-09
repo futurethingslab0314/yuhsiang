@@ -9,7 +9,14 @@ fi
 echo "🎤 開始設置 INMP441 I2S 麥克風..."
 
 CONFIG_FILE="/boot/config.txt"
-BACKUP_FILE="/boot/config.txt.backup.$(date +%Y%m%d%H%M%S)"
+
+# 檢測 Raspberry Pi OS Bookworm (Debian 12) 或更新版本的配置路徑
+if [ -f "/boot/firmware/config.txt" ]; then
+    CONFIG_FILE="/boot/firmware/config.txt"
+    echo "ℹ️ 檢測到新版 OS，使用設定檔: $CONFIG_FILE"
+fi
+
+BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 
 # 備份 config.txt
 echo "📦 備份配置文件到 $BACKUP_FILE"
