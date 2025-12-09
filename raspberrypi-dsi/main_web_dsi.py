@@ -45,6 +45,7 @@ from config import (
 try:
     from web_controller_dsi import WebControllerDSI
     from audio_manager import get_audio_manager, cleanup_audio_manager
+    from voice_input_manager import VoiceInputManager
 except ImportError as e:
     print(f"模組導入失敗: {e}")
     print("請確保所有必要的檔案都在正確的位置")
@@ -113,6 +114,9 @@ class WakeUpMapWebApp:
         self.web_controller = None
         self.button_handler = None
         
+        # 語音輸入管理
+        self.voice_input_manager = None
+        
         # 音訊管理
         self.audio_manager = None
         
@@ -164,6 +168,13 @@ class WakeUpMapWebApp:
             
             # 初始化按鈕處理器
             self._initialize_button_handler()
+            
+            # 初始化語音輸入管理器
+            try:
+                self.voice_input_manager = VoiceInputManager()
+                self.logger.info("語音輸入管理器初始化完成")
+            except Exception as e:
+                self.logger.warning(f"語音輸入管理器初始化失敗: {e}")
             
             # 初始化網頁
             self._initialize_web()
@@ -409,30 +420,31 @@ class WakeUpMapWebApp:
             # 使用 JavaScript 控制 loading 狀態
             if loading:
                 loading_js = """
-                // 顯示 Loading 遮罩
+                // 顯示 Loading 遮罩 (簡化版：右上角錄音提示)
                 var loadingOverlay = document.createElement('div');
                 loadingOverlay.id = 'wakeup-loading-overlay';
                 loadingOverlay.style.cssText = `
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.8);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
+                    top: 20px;
+                    right: 20px;
+                    padding: 10px 20px;
+                    background: rgba(255, 0, 0, 0.8);
+                    border-radius: 20px;
                     z-index: 9999;
                     color: white;
-                    font-size: 24px;
+                    font-size: 16px;
                     font-family: Arial, sans-serif;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
                 `;
                 loadingOverlay.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🌍</div>
-                        <div style="font-size: 24px; margin-bottom: 20px;">剛起床，正在清喉嚨，請稍待......</div>
-                        <div style="font-size: 16px; margin-top: 10px; opacity: 0.7;">Nova 正在為您準備完美的語音</div>
-                    </div>
+                    <div style="width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 1s infinite;"></div>
+                    <span>Recording...</span>
+                    <style>
+                        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+                    </style>
                 `;
                 document.body.appendChild(loadingOverlay);
                 """
@@ -742,24 +754,62 @@ class WakeUpMapWebApp:
         return 'US'
     
     def _handle_long_press(self):
-        """處理長按事件 - 重新載入網頁"""
-        self.logger.info("處理長按事件：重新載入網頁")
+        """處理長按事件 - 啟動語音日記錄音"""
+        self.logger.info("處理長按事件：啟動語音日記錄音")
         
         # 處理螢幕保護器
         self._deactivate_screensaver()
         self._reset_screensaver_timer()
-        
-        try:
-            result = self.web_controller.reload_website()
-            
-            if result and result.get('success'):
-                self.logger.info("網頁重新載入成功")
+
+        if not self.voice_input_manager:
+            self.logger.warning("語音輸入管理器未初始化，無法錄音")
+            if self.audio_manager:
+                self.audio_manager.play_notification_sound('error')
+            return
+
+        def process_voice_diary():
+            try:
+                # 1. 播放開始錄音提示音
+                self.logger.info("🎤 準備開始錄音...")
+                if self.audio_manager:
+                     # 暫時用個簡單的提示音，或者可以請 audio_manager 播報 "請開始說話"
+                    pass
+
+                # 2. 顯示錄音中畫面 (可選: 透過 execute_script 在網頁上顯示 overlay)
+                self._set_loading_state(True) # 借用 loading 畫面當作錄音中/處理中
+
+                # 3. 開始錄音與處理
+                # process_once 會執行：錄音 -> 轉檔 -> STT -> 上傳 Firebase
+                self.logger.info("🎤 開始錄音 (5秒)...")
+                result = self.voice_input_manager.process_once(
+                    duration=5,  # 錄音 5 秒，可從 config 讀取
+                    upload=True
+                )
                 
-            else:
-                self.logger.error("網頁重新載入失敗")
+                text = result.get('text', '')
+                self.logger.info(f"🎤 語音辨識結果: {text}")
                 
-        except Exception as e:
-            self.logger.error(f"長按事件處理失敗：{e}")
+                if text:
+                    self.logger.info("✅ 語音日記處理成功")
+                    if self.audio_manager:
+                        # 成功提示音
+                        # self.audio_manager.play_notification_sound('success')
+                        pass
+                else:
+                    self.logger.warning("⚠️ 語音辨識結果為空")
+                    if self.audio_manager:
+                        self.audio_manager.play_notification_sound('error')
+
+            except Exception as e:
+                self.logger.error(f"語音日記處理失敗: {e}")
+                if self.audio_manager:
+                    self.audio_manager.play_notification_sound('error')
+            finally:
+                # 移除 Loading 畫面
+                self._set_loading_state(False)
+
+        # 在獨立執行緒中執行，避免阻塞主迴圈
+        threading.Thread(target=process_voice_diary, daemon=True).start()
     
     def _initialize_button_handler(self):
         """初始化按鈕處理器"""
