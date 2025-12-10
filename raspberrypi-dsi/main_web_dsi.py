@@ -410,47 +410,58 @@ class WakeUpMapWebApp:
         import time
         threading.Thread(target=generate_and_play_audio, daemon=True).start()
     
-    def _set_loading_state(self, loading: bool):
-        """設定網頁 Loading 狀態"""
+    def _set_loading_state(self, loading: bool, message: str = "Recording..."):
+        """設定網頁 Loading 狀態 (簡化版：右上角提示)"""
         try:
             if not self.web_controller or not self.web_controller.driver:
-                self.logger.warning("網頁控制器未初始化，無法設定Loading狀態")
                 return
             
             # 使用 JavaScript 控制 loading 狀態
             if loading:
-                loading_js = """
-                // 顯示 Loading 遮罩 (簡化版：右上角錄音提示)
-                var loadingOverlay = document.createElement('div');
-                loadingOverlay.id = 'wakeup-loading-overlay';
-                loadingOverlay.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 10px 20px;
-                    background: rgba(255, 0, 0, 0.8);
-                    border-radius: 20px;
-                    z-index: 9999;
-                    color: white;
-                    font-size: 16px;
-                    font-family: Arial, sans-serif;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                `;
+                # 判斷顏色
+                bg_color = "rgba(255, 0, 0, 0.8)"  # 預設紅色 (錄音中)
+                if "Success" in message or "成功" in message:
+                    bg_color = "rgba(0, 180, 0, 0.8)"  # 綠色
+                elif "Processing" in message or "處理" in message:
+                    bg_color = "rgba(255, 165, 0, 0.8)" # 橘色
+                
+                loading_js = f"""
+                var loadingOverlay = document.getElementById('wakeup-loading-overlay');
+                if (!loadingOverlay) {{
+                    loadingOverlay = document.createElement('div');
+                    loadingOverlay.id = 'wakeup-loading-overlay';
+                    loadingOverlay.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 10px 20px;
+                        background: {bg_color};
+                        border-radius: 20px;
+                        z-index: 9999;
+                        color: white;
+                        font-size: 16px;
+                        font-family: Arial, sans-serif;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        transition: background 0.3s;
+                    `;
+                    document.body.appendChild(loadingOverlay);
+                }} else {{
+                    loadingOverlay.style.background = '{bg_color}';
+                }}
+                
                 loadingOverlay.innerHTML = `
                     <div style="width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 1s infinite;"></div>
-                    <span>Recording...</span>
+                    <span>{message}</span>
                     <style>
-                        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+                        @keyframes blink {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.3; }} 100% {{ opacity: 1; }} }}
                     </style>
                 `;
-                document.body.appendChild(loadingOverlay);
                 """
             else:
                 loading_js = """
-                // 移除 Loading 遮罩
                 var loadingOverlay = document.getElementById('wakeup-loading-overlay');
                 if (loadingOverlay) {
                     loadingOverlay.remove();
@@ -458,7 +469,6 @@ class WakeUpMapWebApp:
                 """
             
             self.web_controller.driver.execute_script(loading_js)
-            self.logger.info(f"📺 Loading 狀態設定: {'顯示' if loading else '隱藏'}")
             
         except Exception as e:
             self.logger.error(f"設定Loading狀態失敗: {e}")
@@ -775,14 +785,21 @@ class WakeUpMapWebApp:
                      # 暫時用個簡單的提示音，或者可以請 audio_manager 播報 "請開始說話"
                     pass
 
-                # 2. 顯示錄音中畫面 (可選: 透過 execute_script 在網頁上顯示 overlay)
-                self._set_loading_state(True) # 借用 loading 畫面當作錄音中/處理中
+                # 2. 顯示錄音中畫面
+                self._set_loading_state(True, "Recording...")
 
                 # 3. 開始錄音與處理
-                # process_once 會執行：錄音 -> 轉檔 -> STT -> 上傳 Firebase
                 self.logger.info("🎤 開始錄音 (5秒)...")
+                
+                # 更新狀態為處理中 (錄音結束後)
+                def loading_updater():
+                    import time
+                    time.sleep(5)
+                    self._set_loading_state(True, "Processing...")
+                threading.Thread(target=loading_updater, daemon=True).start()
+
                 result = self.voice_input_manager.process_once(
-                    duration=5,  # 錄音 5 秒，可從 config 讀取
+                    duration=5,  # 錄音 5 秒
                     upload=True
                 )
                 
@@ -791,17 +808,22 @@ class WakeUpMapWebApp:
                 
                 if text:
                     self.logger.info("✅ 語音日記處理成功")
-                    if self.audio_manager:
-                        # 成功提示音
-                        # self.audio_manager.play_notification_sound('success')
-                        pass
+                    self._set_loading_state(True, "Success!")
+                    import time
+                    time.sleep(2) # 顯示成功訊息 2 秒
                 else:
                     self.logger.warning("⚠️ 語音辨識結果為空")
+                    self._set_loading_state(True, "Error: No speech detected")
+                    import time
+                    time.sleep(2)
                     if self.audio_manager:
                         self.audio_manager.play_notification_sound('error')
 
             except Exception as e:
                 self.logger.error(f"語音日記處理失敗: {e}")
+                self._set_loading_state(True, "Error!")
+                import time
+                time.sleep(2)
                 if self.audio_manager:
                     self.audio_manager.play_notification_sound('error')
             finally:

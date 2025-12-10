@@ -70,6 +70,41 @@ class VoiceInputManager:
             raise RuntimeError("openai 套件未安裝，請先執行 `pip install openai`。")
 
         self.openai_client = None
+        
+        # 嘗試自動偵測正確的錄音裝置 (I2S Mic)
+        detected_device = self._detect_smart_device()
+        if detected_device:
+            self.logger.info(f"🎤 自動偵測到麥克風裝置: {detected_device}")
+            self.mic_config['device'] = detected_device
+        else:
+            self.logger.info(f"🎤 使用設定的麥克風裝置: {self.mic_config['device']}")
+
+    def _detect_smart_device(self) -> Optional[str]:
+        """自動從 arecord -l 偵測 I2S 麥克風"""
+        try:
+            cmd = ['arecord', '-l']
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                return None
+                
+            # 尋找 googlevoicehat 或 snd_rpi_i2s
+            # 輸出範例: card 3: sndrpigooglevoi [snd_rpi_googlevoicehat_soundcar], ...
+            for line in result.stdout.split('\n'):
+                lower_line = line.lower()
+                if 'googlevoicehat' in lower_line or 'snd_rpi_i2s' in lower_line:
+                    # 解析 card number
+                    # card 3: ...
+                    import re
+                    match = re.search(r'card\s+(\d+):', line)
+                    if match:
+                        card_num = match.group(1)
+                        self.logger.info(f"🔍 發現 I2S 裝置在 card {card_num}")
+                        return f"plughw:{card_num},0"
+                        
+            return None
+        except Exception as e:
+            self.logger.warning(f"麥克風偵測失敗: {e}")
+            return None
 
     # ------------------------------------------------------------------ #
     # 錄音流程
