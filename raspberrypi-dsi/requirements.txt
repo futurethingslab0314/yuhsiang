@@ -2,6 +2,7 @@
 
 # GPIO控制
 RPi.GPIO>=0.7.1
+pyserial>=3.5
 
 # HTTP請求
 requests>=2.25.1
