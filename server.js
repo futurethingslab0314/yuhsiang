@@ -7,9 +7,10 @@ const { spawn } = require('child_process');
 
 let gpiod;
 try {
+  // 嘗試載入，如果失敗（如在 Vercel 環境）則忽略
   gpiod = require('node-libgpiod');
 } catch (e) {
-  console.log('⚠️ node-libgpiod module not found. GPIO features disabled.');
+  // console.log('⚠️ node-libgpiod module not found. GPIO features disabled.');
 }
 
 // 手動載入 .env 檔案

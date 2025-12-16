@@ -23,9 +23,7 @@
     "openai": "^4.0.0",
     "firebase": "^10.7.1",
     "firebase-admin": "^12.0.0",
-    "onoff": "^6.0.3",
-    "ws": "^8.18.0",
-    "node-libgpiod": "^0.4.0"
+    "ws": "^8.18.0"
   },
   "engines": {
     "node": ">=18.0.0"
