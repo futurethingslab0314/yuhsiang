@@ -53,18 +53,110 @@ class PrinterManager:
             except Exception as e:
                 self.logger.error(f"Failed to print text: {e}")
 
+    
+    def print_image_from_url(self, url: str):
+        """
+        Download and print an image from a URL.
+        Resizes and converts to 1-bit black and white for thermal printing.
+        """
+        self.logger.info(f"Downloading image from {url}...")
+        try:
+            import requests
+            from PIL import Image
+            from io import BytesIO
+            
+            response = requests.get(url, timeout=10)
+            if response.status_code != 200:
+                self.logger.error(f"Failed to download image: status {response.status_code}")
+                return
+
+            # Open image
+            img = Image.open(BytesIO(response.content))
+            
+            # Reset printer
+            self._write_bytes(b'\x1B\x40')
+            
+            # --- Image Processing ---
+            # 1. Resize height to keep aspect ratio, max width 384 (standard 58mm printer)
+            MAX_WIDTH = 384 
+            w_percent = (MAX_WIDTH / float(img.size[0]))
+            h_size = int((float(img.size[1]) * float(w_percent)))
+            img = img.resize((MAX_WIDTH, h_size), Image.Resampling.LANCZOS)
+            
+            # 2. Convert to Black and White (1-bit) with dithering
+            img = img.convert('1') 
+            
+            # --- Printing (Bit Image Mode - GS v 0) ---
+            # GS v 0 m xL xH yL yH d1...dk
+            # m=0 (normal), xL,xH = width in bytes, yL,yH = height in dots
+            
+            width_bytes = int(MAX_WIDTH / 8)
+            height_pixels = img.height
+            
+            # Header command
+            # \x1D\x76\x30 is GS v 0
+            # m = 0
+            header = b'\x1D\x76\x30\x00' 
+            
+            # xL, xH
+            xL = width_bytes % 256
+            xH = width_bytes // 256
+            
+            # yL, yH
+            yL = height_pixels % 256
+            yH = height_pixels // 256
+            
+            cmd = header + bytes([xL, xH, yL, yH])
+            
+            # Get data
+            data = img.tobytes()
+            
+            with self.lock:
+                with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                    # Send command header
+                    ser.write(cmd)
+                    # Send image data
+                    # Break into chunks to avoid buffer overflow if needed, but GS v 0 usually handles stream
+                    # Let's write in chunks of 1KB just in case
+                    CHUNK_SIZE = 1024
+                    for i in range(0, len(data), CHUNK_SIZE):
+                        ser.write(data[i:i+CHUNK_SIZE])
+                        time.sleep(0.01) # Small delay
+                    
+                    # Feed paper after image
+                    ser.write(b'\n\n\n')
+            
+            self.logger.info("Image print command sent.")
+
+        except ImportError:
+             self.logger.error("Pillow or requests not installed. Cannot print image.")
+        except Exception as e:
+            self.logger.error(f"Failed to print image: {e}")
+
+    def _write_bytes(self, data: bytes):
+        """Helper to safely write bytes"""
+        with self.lock:
+            try:
+                with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                    ser.write(data)
+            except Exception as e:
+                self.logger.error(f"Serial write error: {e}")
+
     def print_reward_ticket(self, data: Dict[str, Any]):
         """
         Print a formatted reward ticket.
-        
-        Expected data format:
-        {
-            "coupon_code": "123456",
-            "reward_name": "Free Coffee",
-            "date": "2024-05-20" (optional)
-        }
+        If 'imageUrl' is present, print that instead of text ticket.
         """
+        # Check if we have an image URL
+        image_url = data.get('imageUrl') or data.get('image_url')
+        if image_url:
+            self.print_image_from_url(image_url)
+            # Maybe print a small footer text afterwards?
+            # self.print_text("Date: " + data.get('date', ''))
+            return
+
         coupon_code = data.get('coupon_code', 'UNKNOWN')
+
         reward_name = data.get('reward_name', 'Mystery Reward')
         date_str = data.get('date', time.strftime("%Y-%m-%d %H:%M"))
         
