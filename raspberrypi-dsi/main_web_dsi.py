@@ -169,6 +169,15 @@ class WakeUpMapWebApp:
             # 初始化按鈕處理器
             self._initialize_button_handler()
             
+            # 初始化印表機管理器
+            self.logger.info("初始化印表機管理器...")
+            try:
+                from printer_manager import get_printer_manager
+                self.printer_manager = get_printer_manager()
+            except Exception as e:
+                self.logger.warning(f"印表機管理器初始化失敗: {e}")
+                self.printer_manager = None
+            
             # 初始化語音輸入管理器
             try:
                 self.voice_input_manager = VoiceInputManager()
@@ -614,6 +623,26 @@ class WakeUpMapWebApp:
                                         self.logger.info(f"[前端] {message} {data}")
                                     
                                     last_timestamp = current_timestamp
+                                    
+                                    # 特別處理：檢查是否有列印請求
+                                    if message == "PRINT_REWARD" and self.printer_manager:
+                                        self.logger.info(f"🖨️ 收到列印請求: {data}")
+                                        try:
+                                            # 解析資料（如果是字串的話）
+                                            ticket_data = data
+                                            if isinstance(data, str):
+                                                try:
+                                                    ticket_data = json.loads(data)
+                                                except:
+                                                    pass # 保持原樣
+                                            
+                                            # 執行列印
+                                            if isinstance(ticket_data, dict):
+                                                self.printer_manager.print_reward_ticket(ticket_data)
+                                            else:
+                                                self.logger.warning(f"列印資料格式錯誤: {ticket_data}")
+                                        except Exception as e:
+                                            self.logger.error(f"執行列印失敗: {e}")
                                     
                                 except json.JSONDecodeError as e:
                                     self.logger.warning(f"🔧 [日誌橋接] JSON解析失敗: {e}, 內容: {log_content[:100]}")

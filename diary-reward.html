@@ -636,6 +636,9 @@
 
             </div>
 
+            <!-- Bridge for Raspberry Pi communication -->
+            <div id="frontend-log-bridge" style="display:none;" data-timestamp="0"></div>
+
             <!-- 列印提示 -->
             <div class="print-notification" id="printNotification">
                 <div class="print-icon-container">
@@ -1540,7 +1543,28 @@
                 const printText = (data.printText || '').trim();
                 console.log(`📄 列印內容(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, printText);
                 console.log(`💰 統計: ${data.totalCoins || 0} 枚金幣`);
-                // TODO: 將 printText 送往實體印表機
+
+                // 發送訊號給樹莓派實體列印
+                const bridge = document.getElementById('frontend-log-bridge');
+                if (bridge) {
+                    console.log("🖨️ 發送列印訊號給樹莓派...");
+                    const bridgeData = JSON.stringify({
+                        level: "INFO",
+                        message: "PRINT_REWARD",
+                        data: {
+                            reward_name: "日記金幣獎勵",
+                            coupon_code: "COIN-" + (AppState.totalCoins || 0),
+                            // 如果 API 有回傳文字就印出來，否則使用預設
+                            reward_name: printText ? printText.substring(0, 20) + "..." : "累積金幣獎勵",
+                            date: new Date().toLocaleString()
+                        }
+                    });
+                    bridge.textContent = bridgeData;
+                    bridge.setAttribute('data-timestamp', Date.now()); // 觸發變更
+                } else {
+                    console.warn("⚠️ 找不到橋接元素，無法執行實體列印");
+                }
+
             } catch (e) {
                 console.error('生成列印內容失敗：', e);
             }

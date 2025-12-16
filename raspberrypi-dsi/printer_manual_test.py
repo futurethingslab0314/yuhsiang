@@ -3,13 +3,13 @@ import serial
 import time
 import sys
 
-def test_printer(port='/dev/serial0', baudrate=9600):
+def test_printer(port='/dev/serial0', baudrate=19200):
     """
     Test the thermal printer connected to the specified serial port.
     
     Args:
         port (str): The serial port path (default: /dev/serial0).
-        baudrate (int): The baud rate (default: 9600).
+        baudrate (int): The baud rate (default: 19200).
     """
     print(f"Opening serial port {port} at {baudrate} baud...")
     
@@ -60,6 +60,6 @@ def test_printer(port='/dev/serial0', baudrate=9600):
 if __name__ == "__main__":
     # Allow command line arguments for port and baudrate
     port = sys.argv[1] if len(sys.argv) > 1 else '/dev/serial0'
-    baudrate = int(sys.argv[2]) if len(sys.argv) > 2 else 9600
+    baudrate = int(sys.argv[2]) if len(sys.argv) > 2 else 19200
     
     test_printer(port, baudrate)
