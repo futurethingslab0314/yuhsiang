@@ -210,8 +210,16 @@ class WakeUpMapWebApp:
             
             self.logger.info("網頁初始化完成，系統就緒")
             
+            # 🔥 啟動前端日誌監控 (修復：之前漏掉了這個呼叫)
+            self._start_frontend_log_monitoring()
+            
         except Exception as e:
             self.logger.error(f"網頁初始化失敗：{e}")
+            # 即使失敗也嘗試啟動監控，以免死鎖
+            try:
+                 self._start_frontend_log_monitoring()
+            except:
+                pass
             raise
     
     def _setup_screensaver(self):
@@ -582,81 +590,83 @@ class WakeUpMapWebApp:
         import time
         
         def monitor_frontend_logs():
-            try:
-                last_timestamp = None
-                element_found = False
-                
-                # 給前端足夠時間初始化
-                time.sleep(2)
-                
-                while True:
+            self.logger.info("啟動前端日誌監控 (Robust v2)...")
+            last_timestamp = None
+            
+            # 給前端足夠時間初始化
+            time.sleep(2)
+            
+            while True:
+                try:
+                    # 檢查瀏覽器是否存在
+                    if not self.web_controller or not self.web_controller.driver:
+                        break
+                        
+                    # 檢查程式是否停止
+                    if hasattr(self, '_stop_event') and self._stop_event.is_set():
+                        break
+
+                    # 使用 JavaScript 直接獲取內容 (更穩定)
                     try:
-                        if not self.web_controller or not self.web_controller.driver:
-                            break
+                        logs = self.web_controller.driver.execute_script("""
+                            const el = document.getElementById('frontend-log-bridge');
+                            if (!el) return null;
+                            return {
+                                text: el.textContent,
+                                ts: el.getAttribute('data-timestamp')
+                            };
+                        """)
+                        
+                        if not logs or not logs.get('ts'):
+                            time.sleep(0.5)
+                            continue
                             
-                        # 讀取前端日誌橋接元素
-                        log_element = self.web_controller.driver.find_element("id", "frontend-log-bridge")
+                        current_ts = logs.get('ts')
                         
-                        if not element_found:
-                            self.logger.info("🔧 [日誌橋接] 找到前端日誌橋接元素")
-                            element_found = True
-                        
-                        current_timestamp = log_element.get_attribute("data-timestamp")
-                        
-                        # 如果有新的日誌條目
-                        if current_timestamp and current_timestamp != last_timestamp:
-                            log_content = log_element.text
-                            if log_content:
-                                try:
-                                    import json
-                                    log_entry = json.loads(log_content)
-                                    level = log_entry.get('level', 'INFO')
-                                    message = log_entry.get('message', '')
-                                    data = log_entry.get('data', '')
+                        # 如果時間戳記變了，表示有新訊息
+                        if current_ts != last_timestamp:
+                            last_timestamp = current_ts
+                            log_content = logs.get('text')
+                            
+                            import json
+                            try:
+                                log_entry = json.loads(log_content)
+                                message = log_entry.get('message', '')
+                                data = log_entry.get('data', {})
+                                level = log_entry.get('level', 'INFO')
+                                
+                                # 一般日誌輸出
+                                if level != 'INFO' or message != "PRINT_REWARD":
+                                     # 這裡可以過濾掉太多雜訊，或者選擇性輸出
+                                     # self.logger.info(f"[Front] {message}") 
+                                     pass
+
+                                # 特別處理：檢查是否有列印請求
+                                if message == "PRINT_REWARD":
+                                    self.logger.info(f"🖨️ 收到列印請求 (TS: {current_ts})")
+                                    self.logger.info(f"📦 資料: {data}")
                                     
-                                    # 根據日誌級別輸出到對應的後端日誌
-                                    if level == 'ERROR':
-                                        self.logger.error(f"[前端] {message} {data}")
-                                    elif level == 'WARN':
-                                        self.logger.warning(f"[前端] {message} {data}")
+                                    if self.printer_manager:
+                                        # 在獨立執行緒處理列印，避免卡住監控迴圈
+                                        threading.Thread(
+                                            target=self.printer_manager.print_reward_ticket,
+                                            args=(data,)
+                                        ).start()
                                     else:
-                                        self.logger.info(f"[前端] {message} {data}")
-                                    
-                                    last_timestamp = current_timestamp
-                                    
-                                    # 特別處理：檢查是否有列印請求
-                                    if message == "PRINT_REWARD" and self.printer_manager:
-                                        self.logger.info(f"🖨️ 收到列印請求: {data}")
-                                        try:
-                                            # 解析資料（如果是字串的話）
-                                            ticket_data = data
-                                            if isinstance(data, str):
-                                                try:
-                                                    ticket_data = json.loads(data)
-                                                except:
-                                                    pass # 保持原樣
-                                            
-                                            # 執行列印
-                                            if isinstance(ticket_data, dict):
-                                                self.printer_manager.print_reward_ticket(ticket_data)
-                                            else:
-                                                self.logger.warning(f"列印資料格式錯誤: {ticket_data}")
-                                        except Exception as e:
-                                            self.logger.error(f"執行列印失敗: {e}")
-                                    
-                                except json.JSONDecodeError as e:
-                                    self.logger.warning(f"🔧 [日誌橋接] JSON解析失敗: {e}, 內容: {log_content[:100]}")
-                                    
-                    except Exception as e:
-                        if not element_found:
-                            # 只在第一次找不到元素時報告
-                            self.logger.warning(f"🔧 [日誌橋接] 尚未找到前端日誌元素: {e}")
-                            element_found = None  # 標記為已報告
+                                        self.logger.error("❌ PrinterManager 未初始化")
+                                
+                            except json.JSONDecodeError:
+                                pass # 忽略解析錯誤
+                                
+                    except Exception as js_err:
+                        # 瀏覽器可能正在忙碌或切換頁面
+                        pass
                     
-                    time.sleep(1)  # 每秒檢查一次
+                    time.sleep(0.5)
                     
-            except Exception as e:
-                self.logger.error(f"前端日誌監控失敗: {e}")
+                except Exception as e:
+                    self.logger.error(f"前端日誌監控迴圈錯誤: {e}")
+                    time.sleep(2)
         
         # 在後台執行緒中啟動監控
         monitor_thread = threading.Thread(target=monitor_frontend_logs, daemon=True)

@@ -194,6 +194,9 @@ class WebControllerDSI:
         try:
             self.logger.info("正在載入用戶資料...")
             
+            # 定義 clean_user_name
+            clean_user_name = self.user_name.strip()
+            
             # 確保用戶名稱已設定
             self.driver.execute_script(f"""
                 // 設定全域變數
