@@ -1554,7 +1554,7 @@
                         data: {
                             reward_name: "日記金幣獎勵",
                             coupon_code: "COIN-" + (AppState.totalCoins || 0),
-                            // 如果 API 有回傳文字就印出來，否則使用預設
+                            imageUrl: data.imageUrl, // 關鍵：傳送圖片網址
                             reward_name: printText ? printText.substring(0, 20) + "..." : "累積金幣獎勵",
                             date: new Date().toLocaleString()
                         }
