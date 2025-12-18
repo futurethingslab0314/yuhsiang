@@ -73,18 +73,52 @@ class PrinterManager:
             # Open image
             img = Image.open(BytesIO(response.content))
             
-            # Reset printer
+            # Reset printer & Set density to dark (optional experiment)
+            # \x1D\x28\x45... set density is complex, try standard first.
             self._write_bytes(b'\x1B\x40')
             
             # --- Image Processing ---
-            # 1. Resize height to keep aspect ratio, max width 384 (standard 58mm printer)
+            # 1. Resize height to keep aspect ratio, max width 384
             MAX_WIDTH = 384 
             w_percent = (MAX_WIDTH / float(img.size[0]))
             h_size = int((float(img.size[1]) * float(w_percent)))
             img = img.resize((MAX_WIDTH, h_size), Image.Resampling.LANCZOS)
             
-            # 2. Convert to Black and White (1-bit) with dithering
-            img = img.convert('1') 
+            # 2. Convert to Grayscale first
+            img = img.convert('L')
+            
+            # 3. Enhance Contrast & Sharpness
+            from PIL import ImageEnhance
+            # Increase contrast significantly
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(2.0)  # Increase contrast by 2x
+            # Increase sharpness
+            enhancer = ImageEnhance.Sharpness(img)
+            img = enhancer.enhance(2.0)
+            
+            # 4. Convert to Black and White (1-bit) with Floyd-Steinberg dithering
+            # Using custom logic or standard convert with dithering
+            img = img.convert('1', dither=Image.Dither.FLOYDSTEINBERG)
+            # Alternatively, try simple threshold if dithering is too messy
+            # fn = lambda x : 255 if x > 128 else 0
+            # img = img.point(fn, mode='1')
+
+            # Invert if necessary? Thermal printers print black dots. 
+            # In PIL '1' mode: 0 is black, 1 is white usually? No, actually:
+            # 0 is black, 255 is white in L mode.
+            # In '1' mode, usually white is 255 (1) and black is 0.
+            # However, for printer command, 1 bit = print dot (black).
+            # So we typically need to check: if pixel is BLACK (0), send 1.
+            
+            # Let's invert the image so that Black pixels become White (1) 
+            # and we send 1s to printer to heat up.
+            # WAIT: GS v 0 expects 1 to print a dot (black).
+            # If PIL image has black as 0, we need to invert it.
+            from PIL import ImageOps
+            # In 'L' mode, black is 0. In '1' mode, black is 0.
+            # We want black parts of image to be 1 in our data stream.
+            # So we invert: Black(0) -> 1, White(1) -> 0.
+            img = ImageOps.invert(img.convert('L')).convert('1')
             
             # --- Printing (Bit Image Mode - GS v 0) ---
             # GS v 0 m xL xH yL yH d1...dk
