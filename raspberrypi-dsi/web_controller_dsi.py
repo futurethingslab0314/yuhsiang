@@ -40,7 +40,11 @@ import platform
 logger = logging.getLogger(__name__)
 
 # 配置常數
-WEBSITE_URL = os.getenv('WEBSITE_URL', "https://yuhsiang.vercel.app/pi.html")
+# 配置常數
+# WEBSITE_URL = os.getenv('WEBSITE_URL', "https://yuhsiang.vercel.app/pi.html")
+# 改用本地檔案
+local_html_path = Path(__file__).parent.parent / 'diary-reward.html'
+WEBSITE_URL = f"file://{local_html_path.resolve()}"
 USER_NAME = os.getenv('USER_NAME', 'unknown')  # 從環境變數設定，預設為 unknown
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
