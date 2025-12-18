@@ -101,12 +101,18 @@ class PrinterManager:
             
             # 3. Enhance Contrast & Sharpness
             from PIL import ImageEnhance
+            
+            # Increase Brightness slightly first (prevent dark blobs)
+            enhancer = ImageEnhance.Brightness(img)
+            img = enhancer.enhance(1.2)
+
             # Increase contrast significantly
             enhancer = ImageEnhance.Contrast(img)
-            img = enhancer.enhance(2.0)  # Increase contrast by 2x
+            img = enhancer.enhance(3.0)  # Increase contrast by 3x (was 2x)
+            
             # Increase sharpness
             enhancer = ImageEnhance.Sharpness(img)
-            img = enhancer.enhance(2.0)
+            img = enhancer.enhance(3.0) # Increase sharpness by 3x (was 2x)
             
             # 4. Convert to Black and White (1-bit) with Floyd-Steinberg dithering
             # Using custom logic or standard convert with dithering
