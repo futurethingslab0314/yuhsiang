@@ -37,9 +37,16 @@ class PrinterManager:
                     bytesize=serial.EIGHTBITS,
                     timeout=1
                 ) as ser:
-                    # Wake up/Initialize
-                    ser.write(b'\x1B\x40') # Initialize printer
+                    # Initialize
+                    ser.write(b'\x1B\x40') 
                     time.sleep(0.1)
+                    
+                    # --- Set High Darkness ---
+                    # ESC 7 n1 n2 n3
+                    # Max heating dots=7, Heating time=200, Heating interval=2
+                    ser.write(b'\x1B\x37\x07\xC8\x02')
+                    time.sleep(0.1)
+                    # -------------------------
                     
                     # Encode and print
                     if isinstance(text, str):
@@ -73,9 +80,14 @@ class PrinterManager:
             # Open image
             img = Image.open(BytesIO(response.content))
             
-            # Reset printer & Set density to dark (optional experiment)
-            # \x1D\x28\x45... set density is complex, try standard first.
+            # Reset printer
             self._write_bytes(b'\x1B\x40')
+            time.sleep(0.1)
+
+            # --- Set High Darkness for Image ---
+            self._write_bytes(b'\x1B\x37\x07\xC8\x02') 
+            time.sleep(0.1)
+            # -----------------------------------
             
             # --- Image Processing ---
             # 1. Resize height to keep aspect ratio, max width 384
@@ -209,6 +221,11 @@ class PrinterManager:
                     # Initialize
                     ser.write(b'\x1B\x40')
                     time.sleep(0.1)
+                    
+                    # --- Set High Darkness ---
+                    ser.write(b'\x1B\x37\x07\xC8\x02')
+                    time.sleep(0.1)
+                    # -------------------------
                     
                     # Formatting commands
                     align_center = b'\x1B\x61\x01'
