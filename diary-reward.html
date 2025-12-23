@@ -199,54 +199,76 @@
             z-index: 60;
         }
 
-        /* 麥克風圖示 (像素風格 SVG) */
-        .pixel-mic-icon {
-            width: 64px;
+
+        /* 輸入點點容器 */
+        .voice-input-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
             height: 64px;
-            image-rendering: pixelated;
-            fill: #FFAB00;
             transition: all 0.3s ease;
         }
 
-        /* 預備狀態：呼吸閃爍 */
-        /* 預備狀態：隱藏麥克風，只顯示點擊區域提示（如果需要） */
-        .mic-container.idle .pixel-mic-icon {
-            opacity: 0;
-            /* 隱藏 */
-            fill: #FFAB00;
-            /* 預備顏色，雖然隱藏了但保持一致 */
-            transform: scale(0.8);
-        }
-
-        /* 錄音狀態：麥克風反白 */
-        /* 錄音狀態：顯示麥克風 */
-        /* 錄音狀態：顯示麥克風 */
-        /* 錄音狀態：顯示麥克風 */
-        /* 錄音狀態：顯示麥克風 */
-        .mic-container.recording .pixel-mic-icon {
-            display: block !important;
-            fill: #000000;
-            /* 改為黑色以對比黃色背景 */
-            opacity: 1 !important;
-            visibility: visible !important;
+        /* 點點樣式 */
+        .voice-input-dots .dot {
+            width: 12px;
+            height: 12px;
+            background-color: #000000;
+            /* 黑色 */
+            border-radius: 50%;
+            /* 預設靜態或微動 */
             transform: scale(1);
-            animation: pulse-mic 2s infinite ease-in-out;
+            transition: all 0.3s ease;
         }
 
-        @keyframes pulse-mic {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
+        /* 預備狀態：點點可見但靜態，或者輕微呼吸 */
+        .mic-container.idle .voice-input-dots {
+            opacity: 0.6;
+            /* 微淡 */
+            transform: scale(1);
+        }
 
-            50% {
-                transform: scale(1.1);
-                opacity: 0.8;
-            }
+        .mic-container.idle .voice-input-dots .dot {
+            animation: none;
+            /* 待機時不跳動，或改為慢速呼吸 */
+            background-color: #555;
+            /* 灰色 */
+        }
 
+        /* 錄音狀態：點點跳動 */
+        .mic-container.recording .voice-input-dots {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .mic-container.recording .voice-input-dots .dot {
+            background-color: #000000;
+            animation: dot-bounce 1.4s infinite ease-in-out both;
+        }
+
+        .mic-container.recording .voice-input-dots .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .mic-container.recording .voice-input-dots .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        .mic-container.recording .voice-input-dots .dot:nth-child(3) {
+            animation-delay: 0s;
+        }
+
+        @keyframes dot-bounce {
+
+            0%,
+            80%,
             100% {
+                transform: scale(0);
+            }
+
+            40% {
                 transform: scale(1);
-                opacity: 1;
             }
         }
 
@@ -626,12 +648,12 @@
                     <div class="mic-ripples" id="micRipples">
                         <!-- 波紋圓圈將由 JS 動態產生 -->
                     </div>
-                    <!-- 像素麥克風 SVG -->
-                    <svg class="pixel-mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Reference-Based Pixel Art Microphone -->
-                        <path
-                            d="M9 2 h6 v10 h-6 v-10 z M5 10 h2 v2 h-2 v-2 z M17 10 h2 v2 h-2 v-2 z M7 12 h2 v2 h-2 v-2 z M15 12 h2 v2 h-2 v-2 z M9 14 h6 v2 h-6 v-2 z M11 16 h2 v4 h-2 v-4 z" />
-                    </svg>
+                    <!-- 輸入點點動畫 -->
+                    <div class="voice-input-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
                 </div>
 
             </div>

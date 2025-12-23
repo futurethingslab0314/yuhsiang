@@ -84,8 +84,12 @@ class PrinterManager:
             self._write_bytes(b'\x1B\x40')
             time.sleep(0.1)
 
-            # --- Set High Darkness for Image ---
-            self._write_bytes(b'\x1B\x37\x07\xC8\x02') 
+            # --- Set High Darkness for Image (MAX settings) ---
+            # ESC 7 n1 n2 n3
+            # n1 (Max heating dots): 減少到 64 (0x40) 甚至更低，讓電流更集中，印得更黑但更慢
+            # n2 (Heating time): 增加到 250 (0xFA)，最大 255
+            # n3 (Heating interval): 增加到 20 (0x14)，讓電源有時間回充
+            self._write_bytes(b'\x1B\x37\x40\xFA\x14') 
             time.sleep(0.1)
             # -----------------------------------
             
@@ -173,7 +177,8 @@ class PrinterManager:
                     CHUNK_SIZE = 1024
                     for i in range(0, len(data), CHUNK_SIZE):
                         ser.write(data[i:i+CHUNK_SIZE])
-                        time.sleep(0.01) # Small delay
+                        # 增加延遲，讓印表機有時間「慢慢印」
+                        time.sleep(0.05) # 從 0.01 增加到 0.05
                     
                     # Feed paper after image
                     ser.write(b'\n\n\n')
