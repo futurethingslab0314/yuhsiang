@@ -207,68 +207,59 @@
             justify-content: center;
             gap: 12px;
             height: 64px;
-            transition: all 0.3s ease;
+            /* 預設隱藏 (Idle 狀態) */
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        /* 點點樣式 */
+        /* 點點樣式 - 方形像素風 */
         .voice-input-dots .dot {
             width: 12px;
             height: 12px;
             background-color: #000000;
             /* 黑色 */
-            border-radius: 50%;
-            /* 預設靜態或微動 */
-            transform: scale(1);
-            transition: all 0.3s ease;
+            border-radius: 0;
+            /* 方形 */
+            /* 初始位置 */
+            transform: translateY(0);
         }
 
-        /* 預備狀態：點點可見但靜態，或者輕微呼吸 */
+        /* 預備狀態 (Idle)：完全隱藏 */
         .mic-container.idle .voice-input-dots {
-            opacity: 0.6;
-            /* 微淡 */
-            transform: scale(1);
+            opacity: 0;
         }
 
-        .mic-container.idle .voice-input-dots .dot {
-            animation: none;
-            /* 待機時不跳動，或改為慢速呼吸 */
-            background-color: #555;
-            /* 灰色 */
-        }
-
-        /* 錄音狀態：點點跳動 */
+        /* 錄音狀態 (Recording)：顯示但預設靜止 */
         .mic-container.recording .voice-input-dots {
             opacity: 1;
-            transform: scale(1);
         }
 
-        .mic-container.recording .voice-input-dots .dot {
-            background-color: #000000;
-            animation: dot-bounce 1.4s infinite ease-in-out both;
+        /* 說話狀態 (Speaking)：點點跳動 */
+        .mic-container.recording.speaking .voice-input-dots .dot {
+            animation: dot-jump 0.6s infinite ease-in-out;
         }
 
-        .mic-container.recording .voice-input-dots .dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .mic-container.recording .voice-input-dots .dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        .mic-container.recording .voice-input-dots .dot:nth-child(3) {
+        .mic-container.recording.speaking .voice-input-dots .dot:nth-child(1) {
             animation-delay: 0s;
         }
 
-        @keyframes dot-bounce {
+        .mic-container.recording.speaking .voice-input-dots .dot:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .mic-container.recording.speaking .voice-input-dots .dot:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes dot-jump {
 
             0%,
-            80%,
             100% {
-                transform: scale(0);
+                transform: translateY(0);
             }
 
-            40% {
-                transform: scale(1);
+            50% {
+                transform: translateY(-16px);
             }
         }
 
@@ -1320,11 +1311,13 @@
             }
         }
 
-        // 波紋動畫邏輯
+        // 波紋動畫與說話偵測邏輯
+        let speakingDebounceTimer;
+
         function startRippleAnimation() {
             if (rippleInterval) clearInterval(rippleInterval);
 
-            // 每 100ms 檢查一次音量並產生波紋
+            // 每 100ms 檢查一次音量
             rippleInterval = setInterval(() => {
                 if (!AppState.isRecording || !analyser) return;
 
@@ -1337,9 +1330,21 @@
                 }
                 const average = sum / dataArray.length;
 
-                // 如果音量超過閾值，產生波紋
-                if (average > 10) { // 閾值可調整
+                // 判斷是否在說話 (閾值可調整)
+                if (average > 10) {
+                    // 偵測到聲音，加入 speaking class (觸發跳動動畫)
+                    micContainerEl.classList.add('speaking');
+
+                    // 產生波紋
                     createRipple(average);
+
+                    // 重置 Debounce 計時器
+                    if (speakingDebounceTimer) clearTimeout(speakingDebounceTimer);
+
+                    // 聲音停止後，延遲移除 speaking class 以確保動畫平滑
+                    speakingDebounceTimer = setTimeout(() => {
+                        micContainerEl.classList.remove('speaking');
+                    }, 500);
                 }
             }, 100);
         }
