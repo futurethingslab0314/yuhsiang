@@ -210,65 +210,57 @@
             transition: all 0.3s ease;
         }
 
-        /* 點點樣式 */
+        /* 點點樣式 - 方形 */
         .voice-input-dots .dot {
             width: 12px;
             height: 12px;
             background-color: #000000;
             /* 黑色 */
-            border-radius: 50%;
-            /* 預設靜態或微動 */
-            transform: scale(1);
-            transition: all 0.3s ease;
+            border-radius: 0;
+            /* 方形 */
+            transform: translateY(0);
+            transition: transform 0.2s ease;
+            /* 預設靜態 */
         }
 
-        /* 預備狀態：點點可見但靜態，或者輕微呼吸 */
+        /* 待機狀態：完全隱藏 */
         .mic-container.idle .voice-input-dots {
-            opacity: 0.6;
-            /* 微淡 */
-            transform: scale(1);
+            display: none;
         }
 
-        .mic-container.idle .voice-input-dots .dot {
-            animation: none;
-            /* 待機時不跳動，或改為慢速呼吸 */
-            background-color: #555;
-            /* 灰色 */
-        }
-
-        /* 錄音狀態：點點跳動 */
+        /* 錄音狀態：顯示但靜態 (等待聲音) */
         .mic-container.recording .voice-input-dots {
+            display: flex;
             opacity: 1;
-            transform: scale(1);
         }
 
-        .mic-container.recording .voice-input-dots .dot {
-            background-color: #000000;
-            animation: dot-bounce 1.4s infinite ease-in-out both;
+        /* 當偵測到說話時，添加動畫 */
+        .voice-input-dots.speaking .dot {
+            animation: dot-jump 1s infinite ease-in-out;
         }
 
-        .mic-container.recording .voice-input-dots .dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .mic-container.recording .voice-input-dots .dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        .mic-container.recording .voice-input-dots .dot:nth-child(3) {
+        /* 依序跳動 */
+        .voice-input-dots.speaking .dot:nth-child(1) {
             animation-delay: 0s;
         }
 
-        @keyframes dot-bounce {
+        .voice-input-dots.speaking .dot:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .voice-input-dots.speaking .dot:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes dot-jump {
 
             0%,
-            80%,
             100% {
-                transform: scale(0);
+                transform: translateY(0);
             }
 
-            40% {
-                transform: scale(1);
+            50% {
+                transform: translateY(-16px);
             }
         }
 
@@ -1320,13 +1312,18 @@
             }
         }
 
-        // 波紋動畫邏輯
+        // 波紋動畫與點點跳動邏輯
         function startRippleAnimation() {
             if (rippleInterval) clearInterval(rippleInterval);
 
-            // 每 100ms 檢查一次音量並產生波紋
+            const dotsContainer = document.querySelector('.voice-input-dots');
+
+            // 每 100ms 檢查一次音量並更新動畫
             rippleInterval = setInterval(() => {
-                if (!AppState.isRecording || !analyser) return;
+                if (!AppState.isRecording || !analyser) {
+                    if (dotsContainer) dotsContainer.classList.remove('speaking');
+                    return;
+                }
 
                 analyser.getByteFrequencyData(dataArray);
 
@@ -1337,9 +1334,13 @@
                 }
                 const average = sum / dataArray.length;
 
-                // 如果音量超過閾值，產生波紋
+                // 如果音量超過閾值，產生波紋並觸發點點跳動
                 if (average > 10) { // 閾值可調整
                     createRipple(average);
+                    if (dotsContainer) dotsContainer.classList.add('speaking');
+                } else {
+                    // 若音量低於閾值，停止跳動
+                    if (dotsContainer) dotsContainer.classList.remove('speaking');
                 }
             }, 100);
         }
@@ -1385,6 +1386,8 @@
                 clearInterval(rippleInterval);
                 rippleInterval = null;
             }
+            const dotsContainer = document.querySelector('.voice-input-dots');
+            if (dotsContainer) dotsContainer.classList.remove('speaking');
 
             // 更新 UI：恢復 UI 狀態（立即恢復麥克風顏色）
             micContainerEl.classList.remove('recording');
