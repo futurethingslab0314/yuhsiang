@@ -623,6 +623,123 @@
                 font-size: 18px;
             }
         }
+
+        /* =========================================
+           倒數計時器（右上角）
+           ========================================= */
+        .countdown-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            font-family: 'VT323', 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            z-index: 80;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .countdown-container.show {
+            opacity: 1;
+        }
+
+        .countdown-bar {
+            width: 100px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .countdown-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #FFAB00, #FF8800);
+            width: 0%;
+            transition: width 1s linear;
+        }
+
+        .countdown-time {
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        /* 針對引導語頁面（暖黃色背景）的適配 */
+        .guide-message .countdown-container {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        .guide-message .countdown-bar {
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .guide-message .countdown-progress {
+            background: linear-gradient(90deg, #000000, #333333);
+        }
+
+        /* =========================================
+           完成後預告訊息
+           ========================================= */
+        .next-guide-preview {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'VT323', 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-size: 20px;
+            color: #000000;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+            z-index: 55;
+            line-height: 1.6;
+        }
+
+        .next-guide-preview.show {
+            opacity: 0.7;
+        }
+
+        .next-guide-preview .time-highlight {
+            font-weight: bold;
+            color: #FFAB00;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 2px;
+        }
+
+        /* =========================================
+           問題進度指示器
+           ========================================= */
+        .question-progress {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 60;
+        }
+
+        .question-progress .dot {
+            width: 10px;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0;
+            transition: all 0.3s ease;
+        }
+
+        .question-progress .dot.active {
+            background: #000000;
+            transform: scale(1.2);
+        }
+
+        .question-progress .dot.completed {
+            background: #FFAB00;
+        }
     </style>
 </head>
 
@@ -648,6 +765,19 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- 問題進度指示器 -->
+            <div class="question-progress" id="questionProgress">
+                <div class="dot active" data-question="1"></div>
+                <div class="dot" data-question="2"></div>
+                <div class="dot" data-question="3"></div>
+            </div>
+
+            <!-- 完成後預告訊息 -->
+            <div class="next-guide-preview" id="nextGuidePreview">
+                下次引導語將在<br>
+                明天 <span class="time-highlight" id="nextGuideTime">--:--</span> 出現
             </div>
 
             <!-- Bridge for Raspberry Pi communication -->
@@ -696,6 +826,14 @@
                 <button class="fullscreen-prompt-btn" id="enterFullscreenBtn" title="進入全螢幕"></button>
             </div>
             <div class="fullscreen-prompt-subtitle" id="splashSubtitle">收集生活中的小小碎片</div>
+        </div>
+
+        <!-- 倒數計時器（右上角） -->
+        <div class="countdown-container" id="countdownContainer">
+            <div class="countdown-time" id="countdownTime">--:--</div>
+            <div class="countdown-bar">
+                <div class="countdown-progress" id="countdownProgress"></div>
+            </div>
         </div>
     </div>
 
@@ -773,6 +911,16 @@
             lastGuideShownDate: null
         };
 
+        // 三階段問答狀態
+        const QuestionState = {
+            currentQuestion: 1,         // 當前問題編號（1-3）
+            totalQuestions: 3,          // 總問題數
+            questions: [],              // 儲存三個問題文字
+            answers: [],                // 儲存三個回答（轉錄文字）
+            qualityScores: [],          // 儲存每個回答的品質分數（1-4）
+            isInProgress: false         // 是否正在進行三階段問答
+        };
+
         // 多語言資源
         const i18n = {
             'zh-TW': {
@@ -788,7 +936,11 @@
                 printNotification: '已累積 ${coins} 枚金幣！<br>正在列印你的專屬紙籤...',
                 printNotificationTitle: '恭喜你！',
                 langBtn: 'EN',
-                splashSubtitle: '收集生活中的小小碎片'
+                splashSubtitle: '收集生活中的小小碎片',
+                nextQuestionLoading: '思考下一個問題中…',
+                questionProgress: '問題 ${current} / ${total}',
+                allQuestionsComplete: '完成！正在整理你的回答…',
+                nextGuidePreview: '下次引導語將在<br>明天 <span class="time-highlight">${time}</span> 出現'
             },
             'en-US': {
                 guideLoading: 'Generating guide...',
@@ -803,7 +955,11 @@
                 printNotification: 'Collected ${coins} coins!<br>Printing your paper slip...',
                 printNotificationTitle: 'Congratulations!',
                 langBtn: '中',
-                splashSubtitle: 'Collect small fragments of life'
+                splashSubtitle: 'Collect small fragments of life',
+                nextQuestionLoading: 'Thinking next question…',
+                questionProgress: 'Question ${current} / ${total}',
+                allQuestionsComplete: 'Complete! Processing your answers…',
+                nextGuidePreview: 'Next guide will appear<br>tomorrow at <span class="time-highlight">${time}</span>'
             }
         };
 
@@ -812,7 +968,10 @@
         let printNotificationEl, printMessageEl, printTitleEl;
         let debugInfoEl, debugStateEl, debugCoinsEl, debugRecordingEl;
         let micContainerEl, micRipplesEl;
-        let langToggleBtnEl; // 新增語言切換按鈕
+        let langToggleBtnEl;
+        let countdownContainerEl, countdownTimeEl, countdownProgressEl;
+        let nextGuidePreviewEl, nextGuideTimeEl;
+        let questionProgressEl;
 
         // 音訊分析相關
         let audioContext;
@@ -848,6 +1007,18 @@
             langToggleBtnEl = document.getElementById('langToggleBtn');
             const splashSubtitleEl = document.getElementById('splashSubtitle');
 
+            // 倒數計時器元素
+            countdownContainerEl = document.getElementById('countdownContainer');
+            countdownTimeEl = document.getElementById('countdownTime');
+            countdownProgressEl = document.getElementById('countdownProgress');
+
+            // 預告訊息元素
+            nextGuidePreviewEl = document.getElementById('nextGuidePreview');
+            nextGuideTimeEl = document.getElementById('nextGuideTime');
+
+            // 問題進度指示器
+            questionProgressEl = document.getElementById('questionProgress');
+
             // 設定語言切換互動
             setupLanguageToggle();
 
@@ -868,6 +1039,15 @@
 
             // 設定 WebSocket 連線 (GPIO 按鈕控制)
             setupWebSocket();
+
+            // 啟動倒數計時器
+            updateCountdown();
+            setInterval(updateCountdown, 60 * 1000); // 每分鐘更新
+
+            // 顯示倒數計時器
+            setTimeout(() => {
+                countdownContainerEl.classList.add('show');
+            }, 1000);
 
             console.log('🎮 系統已啟動！輸入 help() 查看測試指令');
         });
@@ -1227,6 +1407,14 @@
                 guideTextEl.style.animationDelay = '0.5s';
 
                 console.log(`📝 顯示引導語(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, text);
+
+                // 初始化問題狀態
+                QuestionState.isInProgress = true;
+                QuestionState.currentQuestion = 1;
+                QuestionState.questions[0] = text;
+                updateQuestionProgress();
+                if (questionProgressEl) questionProgressEl.style.display = 'flex';
+
             } catch (e) {
                 console.error('取得引導語失敗，改用預設樣本：', e);
                 const t = i18n[AppState.language];
@@ -1242,11 +1430,169 @@
                 }
 
                 guideMessageEl.classList.add('show');
+
+                // 初始化問題狀態 (Fallback)
+                QuestionState.isInProgress = true;
+                QuestionState.currentQuestion = 1;
+                QuestionState.questions[0] = fallback;
+                updateQuestionProgress();
+                if (questionProgressEl) questionProgressEl.style.display = 'flex';
             }
         }
 
         function hideGuideMessage() {
             guideMessageEl.classList.remove('show');
+            if (questionProgressEl) questionProgressEl.style.display = 'none';
+        }
+
+        // ====================================
+        // 倒數計時器與預告系統
+        // ====================================
+        function updateCountdown() {
+            const now = new Date();
+            const nextGuide = new Date();
+            nextGuide.setHours(AppState.guideHour, AppState.guideMinute, 0, 0);
+
+            if (now >= nextGuide) nextGuide.setDate(nextGuide.getDate() + 1);
+
+            const diff = nextGuide - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            const totalMs = 24 * 60 * 60 * 1000;
+            const elapsedMs = totalMs - diff;
+            const progress = (elapsedMs / totalMs) * 100;
+
+            if (countdownProgressEl) countdownProgressEl.style.width = progress + '%';
+            if (countdownTimeEl) countdownTimeEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function showNextGuidePreview() {
+            const randomHour = 6 + Math.floor(Math.random() * 3);
+            const randomMinute = Math.floor(Math.random() * 60);
+            const timeString = `${randomHour.toString().padStart(2, '0')}:${randomMinute.toString().padStart(2, '0')}`;
+
+            const t = i18n[AppState.language];
+            const previewHtml = t.nextGuidePreview.replace('${time}', timeString);
+
+            if (nextGuidePreviewEl) {
+                nextGuidePreviewEl.innerHTML = previewHtml;
+                nextGuidePreviewEl.classList.add('show');
+                setTimeout(() => nextGuidePreviewEl.classList.remove('show'), 5000);
+            }
+
+            console.log(`📅 預告：明天 ${timeString} 將出現引導語`);
+        }
+
+        // ====================================
+        // 三階段問答系統
+        // ====================================
+        function resetQuestionState() {
+            QuestionState.currentQuestion = 1;
+            QuestionState.questions = [];
+            QuestionState.answers = [];
+            QuestionState.qualityScores = [];
+            QuestionState.isInProgress = false;
+            updateQuestionProgress();
+        }
+
+        function updateQuestionProgress() {
+            if (!questionProgressEl) return;
+            const dots = questionProgressEl.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                const questionNum = index + 1;
+                dot.classList.remove('active', 'completed');
+                if (questionNum < QuestionState.currentQuestion) dot.classList.add('completed');
+                else if (questionNum === QuestionState.currentQuestion) dot.classList.add('active');
+            });
+        }
+
+        async function generateNextQuestion() {
+            try {
+                const t = i18n[AppState.language];
+                guideTextEl.textContent = t.nextQuestionLoading;
+
+                const previousAnswer = QuestionState.answers[QuestionState.currentQuestion - 2] || '';
+
+                const resp = await fetch(`${API_BASE_URL}/api/generate-guide`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: 'default-user',
+                        date: new Date().toISOString().slice(0, 10),
+                        daysToAnalyze: 7,
+                        language: AppState.language,
+                        questionNumber: QuestionState.currentQuestion,
+                        previousAnswer: previousAnswer
+                    })
+                });
+
+                if (!resp.ok) throw new Error('API 失敗');
+                const data = await resp.json();
+                let question = (data.guideText || '').trim();
+
+                question = question.replace(/^##\s*問題\s*\d+[：:]\s*/i, '').replace(/^##\s*/g, '').replace(/^[\"「『](.+?)[\"」』]$/, '$1').trim();
+
+                QuestionState.questions[QuestionState.currentQuestion - 1] = question;
+                guideTextEl.textContent = question;
+
+                guideTextEl.style.animation = 'none';
+                void guideTextEl.offsetWidth;
+                guideTextEl.style.animation = 'breathe-text 4s ease-out forwards';
+                guideTextEl.style.animationDelay = '0.5s';
+
+                console.log(`📝 問題 ${QuestionState.currentQuestion}/${QuestionState.totalQuestions}:`, question);
+            } catch (e) {
+                console.error('生成問題失敗：', e);
+                const fallbackQuestions = {
+                    'zh-TW': ['你今天過得如何？', '有什麼想分享的嗎？', '這件事對你的意義是什麼？'],
+                    'en-US': ['How was your day?', 'Anything you\'d like to share?', 'What does this mean to you?']
+                };
+                const question = fallbackQuestions[AppState.language][QuestionState.currentQuestion - 1];
+                QuestionState.questions[QuestionState.currentQuestion - 1] = question;
+                guideTextEl.textContent = question;
+            }
+        }
+
+        function analyzeAnswerQuality(text) {
+            if (!text) return 1;
+            const charCount = text.length;
+            if (charCount < 20) return 1;
+            if (charCount < 50) return 2;
+            if (charCount < 100) return 3;
+            return 4;
+        }
+
+        function playQuestionTransition() {
+            spawnCoins(15);
+            console.log('✨ 問題轉場動畫');
+        }
+
+        async function handleQuestionComplete(transcriptText) {
+            QuestionState.answers[QuestionState.currentQuestion - 1] = transcriptText;
+            const quality = analyzeAnswerQuality(transcriptText);
+            QuestionState.qualityScores[QuestionState.currentQuestion - 1] = quality;
+
+            console.log(`✅ 問題 ${QuestionState.currentQuestion} 完成，品質分數: ${quality}, 字數: ${transcriptText.length}`);
+
+            if (QuestionState.currentQuestion < QuestionState.totalQuestions) {
+                QuestionState.currentQuestion++;
+                updateQuestionProgress();
+                playQuestionTransition();
+                setTimeout(async () => { await generateNextQuestion(); }, 1500);
+            } else {
+                console.log('🎉 所有問題完成！');
+                const t = i18n[AppState.language];
+                guideTextEl.textContent = t.allQuestionsComplete;
+
+                const avgQuality = QuestionState.qualityScores.reduce((a, b) => a + b, 0) / QuestionState.qualityScores.length;
+                console.log(`📊 平均品質分數: ${avgQuality.toFixed(2)}, 將用於圖片生成`);
+                localStorage.setItem('lastAnswerQuality', avgQuality.toFixed(2));
+
+                setTimeout(() => showNextGuidePreview(), 1000);
+                QuestionState.isInProgress = false;
+                resetQuestionState();
+            }
         }
 
         // ====================================
@@ -1449,7 +1795,17 @@
                             throw new Error(data?.error || '儲存日記失敗');
                         }
 
+                        // 取得轉錄文字
+                        const transcriptText = data.transcription || data.text || '';
                         console.log('✅ 日記已儲存:', data);
+                        console.log('📝 轉錄文字:', transcriptText);
+
+                        // 儲存到 QuestionState 並處理問答流程
+                        if (QuestionState.isInProgress && transcriptText) {
+                            setTimeout(async () => {
+                                await handleQuestionComplete(transcriptText);
+                            }, 5500);
+                        }
                     } catch (error) {
                         console.error('❌ 儲存日記失敗:', error);
                     } finally {
@@ -1459,11 +1815,15 @@
                         const remainingWait = Math.max(0, 5000 - elapsed);
 
                         setTimeout(() => {
-                            AppState.currentState = SystemState.REWARD;
-                            giveReward();
-                            updateDebugInfo();
-                            // 隱藏引導畫面（若尚未隱藏）
-                            hideGuideMessage();
+                            // 只有在不是三階段問答中，或已完成所有問題時才給獎勵（此處為總結算邏輯，三階段個別獎勵由轉場處理）
+                            // 修正邏輯：三階段問答每回合有小獎勵，最終大獎勵在最後
+                            if (!QuestionState.isInProgress) {
+                                AppState.currentState = SystemState.REWARD;
+                                giveReward();
+                                updateDebugInfo();
+                                // 隱藏引導畫面（若尚未隱藏）
+                                hideGuideMessage();
+                            }
                         }, remainingWait);
                     }
                 };
@@ -1552,6 +1912,11 @@
         async function executePrint() {
             try {
                 console.log('🖨️ 執行列印程序...');
+
+                // 讀取儲存的品質分數
+                const qualityScore = parseFloat(localStorage.getItem('lastAnswerQuality') || '2.5');
+                const answerLengths = QuestionState.answers.map(a => a.length);
+
                 const resp = await fetch(`${API_BASE_URL}/api/generate-print`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1560,7 +1925,9 @@
                         totalCoins: AppState.totalCoins,
                         date: new Date().toISOString().slice(0, 10),
                         daysToAnalyze: 10,
-                        language: AppState.language // 傳遞語言參數
+                        language: AppState.language,
+                        qualityScore: qualityScore,
+                        answerLengths: answerLengths
                     })
                 });
                 if (!resp.ok) throw new Error('API 失敗');
@@ -1949,6 +2316,7 @@
 
                 if (!guideVisible) {
                     console.log('🔘 按鈕觸發：顯示引導語');
+                    resetQuestionState(); // 重置問答狀態
                     showDailyGuide();
                 } else {
                     console.log('🔘 按鈕觸發：開始錄音');
