@@ -628,60 +628,17 @@
            倒數計時器（右上角）
            ========================================= */
         .countdown-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            font-family: 'VT323', 'Courier New', 'Monaco', 'Consolas', monospace;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-            z-index: 80;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            display: none;
+            /* 隱藏時間顯示 */
         }
 
-        .countdown-container.show {
-            opacity: 1;
-        }
-
-        .countdown-bar {
-            width: 100px;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .countdown-progress {
-            height: 100%;
-            background: linear-gradient(90deg, #FFAB00, #FF8800);
-            width: 0%;
-            transition: width 1s linear;
-        }
-
-        .countdown-time {
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-
-        /* 針對引導語頁面（暖黃色背景）的適配 */
-        .guide-message .countdown-container {
-            color: rgba(0, 0, 0, 0.5);
-        }
-
-        .guide-message .countdown-bar {
-            background: rgba(0, 0, 0, 0.15);
-        }
-
-        .guide-message .countdown-progress {
-            background: linear-gradient(90deg, #000000, #333333);
+        .question-progress {
+            display: none;
+            /* 隱藏問題進度 */
         }
 
         /* =========================================
-           完成後預告訊息
+           完成後預告訊息（保留）
            ========================================= */
         .next-guide-preview {
             position: absolute;
@@ -709,36 +666,6 @@
             background: rgba(0, 0, 0, 0.1);
             padding: 2px 8px;
             border-radius: 2px;
-        }
-
-        /* =========================================
-           問題進度指示器
-           ========================================= */
-        .question-progress {
-            position: absolute;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 12px;
-            z-index: 60;
-        }
-
-        .question-progress .dot {
-            width: 10px;
-            height: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0;
-            transition: all 0.3s ease;
-        }
-
-        .question-progress .dot.active {
-            background: #000000;
-            transform: scale(1.2);
-        }
-
-        .question-progress .dot.completed {
-            background: #FFAB00;
         }
     </style>
 </head>
@@ -1449,22 +1376,13 @@
         // 倒數計時器與預告系統
         // ====================================
         function updateCountdown() {
-            const now = new Date();
-            const nextGuide = new Date();
-            nextGuide.setHours(AppState.guideHour, AppState.guideMinute, 0, 0);
+            // 直接顯示下次引導語的出現時間（幾點幾分）
+            const hour = AppState.guideHour.toString().padStart(2, '0');
+            const minute = AppState.guideMinute.toString().padStart(2, '0');
 
-            if (now >= nextGuide) nextGuide.setDate(nextGuide.getDate() + 1);
-
-            const diff = nextGuide - now;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-            const totalMs = 24 * 60 * 60 * 1000;
-            const elapsedMs = totalMs - diff;
-            const progress = (elapsedMs / totalMs) * 100;
-
-            if (countdownProgressEl) countdownProgressEl.style.width = progress + '%';
-            if (countdownTimeEl) countdownTimeEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            if (countdownTimeEl) {
+                countdownTimeEl.textContent = `${hour}:${minute}`;
+            }
         }
 
         function showNextGuidePreview() {
@@ -1796,14 +1714,19 @@
                         }
 
                         // 取得轉錄文字
-                        const transcriptText = data.transcription || data.text || '';
+                        // 修正：API 回傳結構為 data.data.content
+                        const transcriptText = data.data?.content || data.content || data.transcription || data.text || '';
+
                         console.log('✅ 日記已儲存:', data);
                         console.log('📝 轉錄文字:', transcriptText);
 
                         // 儲存到 QuestionState 並處理問答流程
-                        if (QuestionState.isInProgress && transcriptText) {
+                        if (QuestionState.isInProgress) {
+                            if (!transcriptText) console.warn('⚠️ 未偵測到轉錄內容，將使用預設文字繼續流程');
+                            const finalText = transcriptText || "(未偵測到語音)";
+
                             setTimeout(async () => {
-                                await handleQuestionComplete(transcriptText);
+                                await handleQuestionComplete(finalText);
                             }, 5500);
                         }
                     } catch (error) {
