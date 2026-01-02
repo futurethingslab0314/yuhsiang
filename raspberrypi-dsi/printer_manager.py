@@ -75,7 +75,8 @@ class PrinterManager:
             response = requests.get(url, timeout=10)
             if response.status_code != 200:
                 self.logger.error(f"Failed to download image: status {response.status_code}")
-                return
+                return False
+
 
             # Open image
             img = Image.open(BytesIO(response.content))
@@ -184,11 +185,15 @@ class PrinterManager:
                     ser.write(b'\n\n\n')
             
             self.logger.info("Image print command sent.")
+            return True
 
         except ImportError:
              self.logger.error("Pillow or requests not installed. Cannot print image.")
+             return False
         except Exception as e:
             self.logger.error(f"Failed to print image: {e}")
+            raise e # Re-raise exception to trigger fallback
+
 
     def _write_bytes(self, data: bytes):
         """Helper to safely write bytes"""
@@ -207,10 +212,16 @@ class PrinterManager:
         # Check if we have an image URL
         image_url = data.get('imageUrl') or data.get('image_url')
         if image_url:
-            self.print_image_from_url(image_url)
-            # Maybe print a small footer text afterwards?
-            # self.print_text("Date: " + data.get('date', ''))
-            return
+            try:
+                if self.print_image_from_url(image_url):
+                    return  # Success, we are done
+                else:
+                    self.logger.warning(f"Image print returned False for URL {image_url}. Falling back.")
+            except Exception as e:
+                self.logger.error(f"Failed to print image from URL {image_url}: {e}. Falling back to text ticket.")
+                # Fall through to print text ticket
+
+
 
         coupon_code = data.get('coupon_code', 'UNKNOWN')
 
