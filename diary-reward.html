@@ -628,8 +628,8 @@
            倒數計時器（右上角）
            ========================================= */
         .countdown-container {
-            display: none;
-            /* 隱藏時間顯示 */
+            /* 恢復顯示 */
+            display: flex;
         }
 
         .question-progress {
@@ -1291,6 +1291,8 @@
                 // 先顯示載入中的簡短字樣，避免空白
                 guideTextEl.textContent = t.guideLoading;
                 guideMessageEl.classList.add('show');
+                // 隱藏時間顯示
+                if (countdownContainerEl) countdownContainerEl.style.opacity = '0';
 
                 const resp = await fetch(`${API_BASE_URL}/api/generate-guide`, {
                     method: 'POST',
@@ -1370,6 +1372,8 @@
         function hideGuideMessage() {
             guideMessageEl.classList.remove('show');
             if (questionProgressEl) questionProgressEl.style.display = 'none';
+            // 恢復顯示時間
+            if (countdownContainerEl) countdownContainerEl.style.opacity = '1';
         }
 
         // ====================================
