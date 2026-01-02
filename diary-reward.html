@@ -1570,9 +1570,16 @@
                 console.log(`📊 平均品質分數: ${avgQuality.toFixed(2)}, 將用於圖片生成`);
                 localStorage.setItem('lastAnswerQuality', avgQuality.toFixed(2));
 
-                setTimeout(() => showNextGuidePreview(), 1000);
-                QuestionState.isInProgress = false;
-                resetQuestionState();
+                // 修正：給用戶 3 秒鐘閱讀完成訊息並欣賞金幣，然後關閉頁面
+                console.log("⏳ 3秒後關閉引導頁面...");
+                setTimeout(() => {
+                    hideGuideMessage();
+                    showNextGuidePreview();
+
+                    // 重置狀態
+                    QuestionState.isInProgress = false;
+                    resetQuestionState();
+                }, 3000);
             }
         }
 
