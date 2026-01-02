@@ -141,6 +141,11 @@
             pointer-events: auto;
         }
 
+        /* 背景透明模式：用於結算時顯示金幣 */
+        .guide-message.transparent {
+            background-color: transparent;
+        }
+
         /* 引導語文字：呼吸感、清晰易讀 */
         .guide-message .guide-text {
             margin-bottom: 0;
@@ -1383,6 +1388,7 @@
 
         function hideGuideMessage() {
             guideMessageEl.classList.remove('show');
+            guideMessageEl.classList.remove('transparent'); // 清理透明狀態
             if (questionProgressEl) questionProgressEl.style.display = 'none';
             // 恢復顯示時間
             if (countdownContainerEl) countdownContainerEl.style.opacity = '1';
@@ -1560,23 +1566,21 @@
 
             } else {
                 console.log('🎉 所有問題完成！');
-                const t = i18n[AppState.language];
-                guideTextEl.textContent = t.allQuestionsComplete;
 
-                // 最後一題也要給獎勵！
+                // 1. 立即隱藏引導畫面，露出待機背景
+                hideGuideMessage();
+
+                // 2. 觸發金幣掉落動畫（在待機背景上）
                 playQuestionTransition();
 
                 const avgQuality = QuestionState.qualityScores.reduce((a, b) => a + b, 0) / QuestionState.qualityScores.length;
                 console.log(`📊 平均品質分數: ${avgQuality.toFixed(2)}, 將用於圖片生成`);
                 localStorage.setItem('lastAnswerQuality', avgQuality.toFixed(2));
 
-                // 修正：給用戶 3 秒鐘閱讀完成訊息並欣賞金幣，然後關閉頁面
-                console.log("⏳ 3秒後關閉引導頁面...");
+                // 3. 延遲重置狀態
+                console.log("⏳ 3秒後重置狀態...");
                 setTimeout(() => {
-                    hideGuideMessage();
-                    showNextGuidePreview();
-
-                    // 重置狀態
+                    // 只需重置內部變數
                     QuestionState.isInProgress = false;
                     resetQuestionState();
                 }, 3000);
