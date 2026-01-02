@@ -1924,9 +1924,17 @@
         }
 
         async function executePrint() {
-            try {
-                console.log('🖨️ 執行列印程序...');
+            console.log('🖨️ 執行列印程序...');
 
+            // 預設/備用資料
+            let printData = {
+                text: "恭喜獲得金幣獎勵！\n(網路連線不可用，使用離線憑證)",
+                coins: AppState.totalCoins,
+                imageUrl: null,
+                coupon: "OFFLINE-" + Date.now().toString().slice(-4)
+            };
+
+            try {
                 // 讀取儲存的品質分數
                 const qualityScore = parseFloat(localStorage.getItem('lastAnswerQuality') || '2.5');
                 const answerLengths = QuestionState.answers.map(a => a.length);
@@ -1944,24 +1952,36 @@
                         answerLengths: answerLengths
                     })
                 });
-                if (!resp.ok) throw new Error('API 失敗');
-                const data = await resp.json();
-                const printText = (data.printText || '').trim();
-                console.log(`📄 列印內容(From API, 基於 ${data.basedOnDiaries || 0} 筆日記):`, printText);
-                console.log(`💰 統計: ${data.totalCoins || 0} 枚金幣`);
 
-                // 發送訊號給樹莓派實體列印
+                if (resp.ok) {
+                    const data = await resp.json();
+                    console.log(`📄 API生成成功:`, data);
+
+                    // 更新為 API 資料
+                    printData.text = (data.printText || '').trim();
+                    printData.coins = data.totalCoins || AppState.totalCoins;
+                    printData.imageUrl = data.imageUrl;
+                    printData.coupon = "COIN-" + printData.coins;
+                } else {
+                    console.warn('⚠️ API 請求失敗，將使用備用內容');
+                }
+
+            } catch (e) {
+                console.error('⚠️ 生成列印內容時發生錯誤 (將使用備用內容):', e);
+            }
+
+            // 無論 API 是否成功，都發送訊號給樹莓派
+            try {
                 const bridge = document.getElementById('frontend-log-bridge');
                 if (bridge) {
-                    console.log("🖨️ 發送列印訊號給樹莓派...");
+                    console.log("🖨️ 發送列印訊號給樹莓派...", printData);
                     const bridgeData = JSON.stringify({
                         level: "INFO",
                         message: "PRINT_REWARD",
                         data: {
-                            reward_name: "日記金幣獎勵",
-                            coupon_code: "COIN-" + (AppState.totalCoins || 0),
-                            imageUrl: data.imageUrl, // 關鍵：傳送圖片網址
-                            reward_name: printText ? printText.substring(0, 20) + "..." : "累積金幣獎勵",
+                            reward_name: printData.text ? printData.text.substring(0, 20) + "..." : "金幣獎勵",
+                            coupon_code: printData.coupon,
+                            imageUrl: printData.imageUrl,
                             date: new Date().toLocaleString()
                         }
                     });
@@ -1970,11 +1990,11 @@
                 } else {
                     console.warn("⚠️ 找不到橋接元素，無法執行實體列印");
                 }
-
-            } catch (e) {
-                console.error('生成列印內容失敗：', e);
+            } catch (bridgeError) {
+                console.error("❌ 發送橋接訊號失敗:", bridgeError);
             }
         }
+
 
         // ====================================
         // 資料儲存

@@ -212,6 +212,12 @@ class WakeUpMapWebApp:
             
             # 🔥 啟動前端日誌監控 (修復：之前漏掉了這個呼叫)
             self._start_frontend_log_monitoring()
+
+            # 🖨️ 啟動時發送測試列印，確認印表機子系統正常
+            if self.printer_manager:
+                self.logger.info("🖨️ 正在執行啟動測試列印...")
+                threading.Thread(target=self.printer_manager.print_text, args=("System Ready\nPrinter Online",)).start()
+
             
         except Exception as e:
             self.logger.error(f"網頁初始化失敗：{e}")
@@ -600,7 +606,9 @@ class WakeUpMapWebApp:
                 try:
                     # 檢查瀏覽器是否存在
                     if not self.web_controller or not self.web_controller.driver:
+                        self.logger.warning("前端日誌監控：瀏覽器物件不存在")
                         break
+
                         
                     # 檢查程式是否停止
                     if hasattr(self, '_stop_event') and self._stop_event.is_set():
@@ -625,6 +633,8 @@ class WakeUpMapWebApp:
                         
                         # 如果時間戳記變了，表示有新訊息
                         if current_ts != last_timestamp:
+                            self.logger.info(f"🔧 Bridge Update Detected! TS: {current_ts}") # DEBUG Force Log
+                            
                             last_timestamp = current_ts
                             log_content = logs.get('text')
                             
@@ -634,6 +644,7 @@ class WakeUpMapWebApp:
                                 message = log_entry.get('message', '')
                                 data = log_entry.get('data', {})
                                 level = log_entry.get('level', 'INFO')
+
                                 
                                 # 一般日誌輸出
                                 if level != 'INFO' or message != "PRINT_REWARD":
