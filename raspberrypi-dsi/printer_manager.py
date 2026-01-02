@@ -9,6 +9,7 @@ class PrinterManager:
     def __init__(self, port: str = '/dev/serial0', baudrate: int = 19200):
         """
         Initialize the thermal printer manager.
+        """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.port = port
         self.baudrate = baudrate
