@@ -613,8 +613,11 @@ class WakeUpMapWebApp:
                     # 檢查程式是否停止
                     if hasattr(self, '_stop_event') and self._stop_event.is_set():
                         break
+
+                    # DEBUG: 確認迴圈有在跑
+                    # print(".", end="", flush=True) 
                     
-                    # Heartbeat Debug Log (每10秒印一次)
+                    # 使用 JavaScript 直接獲取內容 (更穩定)                # Heartbeat Debug Log (每10秒印一次)
                     # Use a counter variable outside loop if possible, but here we just use random chance or check time
                     # Simple way: just log "Web Monitor Active" once at start (already done)
                     # Let's verify logs are working
@@ -671,6 +674,9 @@ class WakeUpMapWebApp:
                                         ).start()
                                     else:
                                         self.logger.error("❌ PrinterManager 未初始化")
+                                else:
+                                    # DEBUG: 顯示收到的其他訊息
+                                    self.logger.info(f"收到非列印訊息: {message} ({current_ts})")
                                 
                             except json.JSONDecodeError:
                                 pass # 忽略解析錯誤
