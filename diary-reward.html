@@ -628,8 +628,20 @@
            倒數計時器（右上角）
            ========================================= */
         .countdown-container {
-            /* 恢復顯示 */
+            position: absolute;
+            /* 改為 absolute 以配合 canvas-container */
+            top: 30px;
+            right: 30px;
             display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            /* 像素字體大一點 */
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 80;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
         }
 
         .question-progress {
