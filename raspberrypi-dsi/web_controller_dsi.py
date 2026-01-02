@@ -96,6 +96,10 @@ class WebControllerDSI:
         options.add_argument('--disable-renderer-backgrounding')
         options.add_argument('--disable-features=TranslateUI')
         options.add_argument('--disable-ipc-flooding-protection')
+
+        # 自動允許麥克風權限，不跳出詢問視窗
+        options.add_argument('--use-fake-ui-for-media-stream')
+        options.add_argument('--unsafely-treat-insecure-origin-as-secure=file://')
         
         # 記憶體優化
         options.add_argument('--memory-pressure-off')

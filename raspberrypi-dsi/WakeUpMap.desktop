@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=WakeUpMap 甦醒地圖
+Comment=啟動甦醒地圖互動裝置
+Exec=/home/future/yuhsiang/raspberrypi-dsi/start_app.sh
+Icon=utilities-terminal
+Terminal=false
+Categories=Application;

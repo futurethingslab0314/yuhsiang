@@ -675,8 +675,9 @@ class WakeUpMapWebApp:
                                     else:
                                         self.logger.error("❌ PrinterManager 未初始化")
                                 else:
-                                    # DEBUG: 顯示收到的其他訊息
-                                    self.logger.info(f"收到非列印訊息: {message} ({current_ts})")
+                                    # DEBUG: 顯示收到的其他訊息 (已關閉)
+                                    pass
+                                    # self.logger.info(f"收到非列印訊息: {message} ({current_ts})")
                                 
                             except json.JSONDecodeError:
                                 pass # 忽略解析錯誤
