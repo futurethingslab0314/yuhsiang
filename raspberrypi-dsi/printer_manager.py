@@ -6,7 +6,7 @@ import threading
 from typing import Optional, Dict, Any
 
 class PrinterManager:
-    def __init__(self, port: str = '/dev/serial0', baudrate: int = 19200):
+    def __init__(self, port: str = '/dev/serial0', baudrate: int = 9600):
         """
         Initialize the thermal printer manager.
         """

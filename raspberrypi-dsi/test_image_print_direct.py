@@ -57,10 +57,11 @@ def test_print_image(url):
             # Get image data
             data = img.tobytes()
             
-            # Split into small chunks to prevent buffer overflow at 19200 baud
-            # 19200 baud ~= 1920 bytes/sec. 
-            # Safe chunk size: 32 bytes (takes ~0.016s to transmit, we sleep longer to be safe)
-            CHUNK_SIZE = 32
+            # Adjusted Flow Control
+            # Too slow = Printer Timeout -> Gibberish text
+            # Too fast = Buffer Overflow -> Gibberish text
+            # Compromise: 512 bytes chunks with minimal delay
+            CHUNK_SIZE = 512
             
             # Print total size for reference
             total_bytes = len(data)
@@ -70,9 +71,8 @@ def test_print_image(url):
                 chunk = data[i:i+CHUNK_SIZE]
                 ser.write(chunk)
                 
-                # Dynamic delay: wait slightly longer than transmission time
-                # + extra buffer for printer processing
-                time.sleep(0.05) 
+                # Minimal delay to let UART buffer drain slightly but not trigger timeout
+                time.sleep(0.01) 
                 
                 # Progress indicator
                 percent = (i + len(chunk)) / total_bytes * 100
