@@ -1728,7 +1728,10 @@
 
             // 5 秒緩衝等待（給用戶平靜的時間）
             setTimeout(() => {
-                hideGuideMessage();
+                // 只有在非問答流程時才隱藏引導語
+                if (!QuestionState.isInProgress) {
+                    hideGuideMessage();
+                }
             }, 5000);
 
             // 處理錄音數據 (此部分不變，在背景執行)
