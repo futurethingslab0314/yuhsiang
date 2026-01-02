@@ -29,9 +29,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ 
-            success: false, 
-            error: '只允許 POST 請求' 
+        return res.status(405).json({
+            success: false,
+            error: '只允許 POST 請求'
         });
     }
 

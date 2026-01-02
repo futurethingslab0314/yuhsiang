@@ -1478,11 +1478,16 @@
                 console.log(`📝 問題 ${QuestionState.currentQuestion}/${QuestionState.totalQuestions}:`, question);
             } catch (e) {
                 console.error('生成問題失敗：', e);
+                const lang = AppState.language || 'zh-TW';
                 const fallbackQuestions = {
                     'zh-TW': ['你今天過得如何？', '有什麼想分享的嗎？', '這件事對你的意義是什麼？'],
                     'en-US': ['How was your day?', 'Anything you\'d like to share?', 'What does this mean to you?']
                 };
-                const question = fallbackQuestions[AppState.language][QuestionState.currentQuestion - 1];
+                const questionList = fallbackQuestions[lang] || fallbackQuestions['zh-TW'];
+                // 安全取得問題，防止 index out of bounds
+                const idx = (QuestionState.currentQuestion - 1) % questionList.length;
+                const question = questionList[idx] || '請告訴我更多...';
+
                 QuestionState.questions[QuestionState.currentQuestion - 1] = question;
                 guideTextEl.textContent = question;
             }
@@ -1504,21 +1509,62 @@
         }
 
         async function handleQuestionComplete(transcriptText) {
+            console.log("🚀 進入 handleQuestionComplete");
+            console.log("當前狀態:", JSON.stringify(QuestionState));
+
+            // 防呆：確保 currentQuestion 是數字
+            if (typeof QuestionState.currentQuestion !== 'number') {
+                console.error("❌ currentQuestion 不是數字，強制重置為 1");
+                QuestionState.currentQuestion = 1;
+            }
+
             QuestionState.answers[QuestionState.currentQuestion - 1] = transcriptText;
             const quality = analyzeAnswerQuality(transcriptText);
             QuestionState.qualityScores[QuestionState.currentQuestion - 1] = quality;
 
             console.log(`✅ 問題 ${QuestionState.currentQuestion} 完成，品質分數: ${quality}, 字數: ${transcriptText.length}`);
 
+            // 判斷是否還有下一題
             if (QuestionState.currentQuestion < QuestionState.totalQuestions) {
+                console.log("➡️ 準備進入下一題...");
+
+                // 1. 更新題號
                 QuestionState.currentQuestion++;
-                updateQuestionProgress();
-                playQuestionTransition();
-                setTimeout(async () => { await generateNextQuestion(); }, 1500);
+                console.log("更新後題號:", QuestionState.currentQuestion);
+
+                // 2. 更新 UI 進度
+                try {
+                    updateQuestionProgress();
+                } catch (e) {
+                    console.error("UI 更新失敗:", e);
+                }
+
+                // 3. 播放轉場動畫 (掉金幣)
+                try {
+                    playQuestionTransition();
+                } catch (e) {
+                    console.error("轉場動畫失敗:", e);
+                }
+
+                // 4. 延遲後生成下一題
+                setTimeout(async () => {
+                    console.log("⚡️ 觸發 generateNextQuestion");
+                    try {
+                        await generateNextQuestion();
+                    } catch (e) {
+                        console.error("❌ generateNextQuestion 執行失敗:", e);
+                        // 如果失敗，嘗試用 fallback 或顯示錯誤
+                        guideTextEl.textContent = "接下來...";
+                    }
+                }, 1500);
+
             } else {
                 console.log('🎉 所有問題完成！');
                 const t = i18n[AppState.language];
                 guideTextEl.textContent = t.allQuestionsComplete;
+
+                // 最後一題也要給獎勵！
+                playQuestionTransition();
 
                 const avgQuality = QuestionState.qualityScores.reduce((a, b) => a + b, 0) / QuestionState.qualityScores.length;
                 console.log(`📊 平均品質分數: ${avgQuality.toFixed(2)}, 將用於圖片生成`);
@@ -1702,15 +1748,19 @@
         }
 
         async function processRecording(audioBlob, duration) {
+            // 鎖定當前狀態：是否處於問答流程中
+            const wasInQuestionFlow = QuestionState.isInProgress;
+            console.log(`🎙️ processRecording 開始, InFlow: ${wasInQuestionFlow}`);
+
             try {
                 console.log('📤 上傳日記到伺服器...');
 
-                // 將音訊轉為 base64（簡化方案，實際可上傳至 Firebase Storage）
+                // 將音訊轉為 base64
                 const reader = new FileReader();
                 reader.readAsDataURL(audioBlob);
 
                 reader.onloadend = async () => {
-                    const audioData = reader.result; // dataURL base64
+                    const audioData = reader.result;
 
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/save-diary`, {
@@ -1731,29 +1781,24 @@
                         }
 
                         // 取得轉錄文字
-                        // 修正：API 回傳結構為 data.data.content
                         const transcriptText = data.data?.content || data.content || data.transcription || data.text || '';
-
                         console.log('✅ 日記已儲存:', data);
                         console.log('📝 轉錄文字:', transcriptText);
 
-                        // 儲存到 QuestionState 並處理問答流程
-                        if (QuestionState.isInProgress) {
+                        // 專屬邏輯：如果是問答流程，由這裡完全接管
+                        if (wasInQuestionFlow) {
                             if (!transcriptText) console.warn('⚠️ 未偵測到轉錄內容，將使用預設文字繼續流程');
                             const finalText = transcriptText || "(未偵測到語音)";
 
-                            // 縮短延遲至 2 秒，確保用戶感覺流暢
+                            // 縮短延遲至 2 秒
                             setTimeout(async () => {
-                                console.log("⏳ 準備進入下一題處理流程...");
+                                console.log("⏳ [Flow] 準備進入下一題處理流程...");
                                 try {
-                                    // 重要：重置狀態為 IDLE，確保按鈕和新流程可以正常運作
                                     AppState.currentState = SystemState.IDLE;
                                     updateDebugInfo();
-
                                     await handleQuestionComplete(finalText);
                                 } catch (err) {
-                                    console.error("❌ 下一題處理失敗:", err);
-                                    // 強制重置以防卡死
+                                    console.error("❌ [Flow] 下一題處理失敗:", err);
                                     QuestionState.isInProgress = false;
                                     hideGuideMessage();
                                 }
@@ -1761,35 +1806,37 @@
                         }
                     } catch (error) {
                         console.error('❌ 儲存日記失敗:', error);
-                    } finally {
-                        // 即使儲存失敗，也給予獎勵，避免中斷體驗
-                        // 確保至少等待 5 秒（從錄音結束開始算）
-                        const elapsed = Date.now() - (recordingStartTime + duration * 1000);
-                        const remainingWait = Math.max(0, 5000 - elapsed);
 
-                        setTimeout(() => {
-                            // 只有在不是三階段問答中，或已完成所有問題時才給獎勵（此處為總結算邏輯，三階段個別獎勵由轉場處理）
-                            // 修正邏輯：三階段問答每回合有小獎勵，最終大獎勵在最後
-                            if (!QuestionState.isInProgress) {
-                                AppState.currentState = SystemState.REWARD;
-                                giveReward();
-                                updateDebugInfo();
-                                // 隱藏引導畫面（若尚未隱藏）
-                                hideGuideMessage();
-                            }
-                        }, remainingWait);
+                        // 即使失敗，如果在問答流程中，也要嘗試恢復
+                        if (wasInQuestionFlow) {
+                            setTimeout(async () => {
+                                console.log("⏳ [Flow-Error] 嘗試恢復流程...");
+                                AppState.currentState = SystemState.IDLE;
+                                await handleQuestionComplete("(儲存失敗但繼續)");
+                            }, 2000);
+                        }
+                    } finally {
+                        // 通用邏輯：只有在"非"問答流程時，才使用這裡的備用獎勵機制
+                        if (!wasInQuestionFlow) {
+                            const elapsed = Date.now() - (recordingStartTime + duration * 1000);
+                            const remainingWait = Math.max(0, 5000 - elapsed);
+
+                            setTimeout(() => {
+                                console.log("🎁 [Generic] 觸發通用獎勵結算");
+                                if (AppState.currentState !== SystemState.REWARD) {
+                                    AppState.currentState = SystemState.REWARD;
+                                    giveReward();
+                                    updateDebugInfo();
+                                    hideGuideMessage();
+                                }
+                            }, remainingWait);
+                        } else {
+                            console.log("ℹ️ [Generic] 跳過通用結算 (由問答流程接管)");
+                        }
                     }
                 };
-
-            } catch (error) {
-                console.error('❌ 處理錄音失敗:', error);
-                // 即使失敗也給予獎勵（使用者體驗優先）
-                setTimeout(() => {
-                    AppState.currentState = SystemState.REWARD;
-                    giveReward();
-                    updateDebugInfo();
-                    hideGuideMessage();
-                }, 5000);
+            } catch (err) {
+                console.error("FileReader Error:", err);
             }
         }
 
