@@ -6,7 +6,7 @@ import threading
 from typing import Optional, Dict, Any
 
 class PrinterManager:
-    def __init__(self, port: str = '/dev/serial0', baudrate: int = 9600):
+    def __init__(self, port: str = '/dev/serial0', baudrate: int = 19200):
         """
         Initialize the thermal printer manager.
         """
@@ -15,15 +15,8 @@ class PrinterManager:
         self.baudrate = baudrate
         self.lock = threading.Lock()
         self._connection_check()
-
-    def _connection_check(self):
-        """Check if we can open the serial port"""
-        try:
-            with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
-                pass
-            self.logger.info(f"Printer connection check to {self.port} successful.")
-        except serial.SerialException as e:
-            self.logger.warning(f"Printer connection check failed: {e}. Printer might not work.")
+    
+    # ... (connection check omitted) ...
 
     def print_text(self, text: str):
         """Print simple text to the thermal printer"""
@@ -41,11 +34,9 @@ class PrinterManager:
                     ser.write(b'\x1B\x40') 
                     time.sleep(0.1)
                     
-                    # --- Set High Darkness ---
-                    # ESC 7 n1 n2 n3
-                    # Max heating dots=7, Heating time=200, Heating interval=2
-                    ser.write(b'\x1B\x37\x07\xC8\x02')
-                    time.sleep(0.1)
+                    # --- Set High Darkness (Temporarily Disabled) ---
+                    # ser.write(b'\x1B\x37\x07\xC8\x02')
+                    # time.sleep(0.1)
                     # -------------------------
                     
                     # Encode and print
@@ -85,13 +76,9 @@ class PrinterManager:
             self._write_bytes(b'\x1B\x40')
             time.sleep(0.1)
 
-            # --- Set High Darkness for Image (Optimized) ---
-            # ESC 7 n1 n2 n3
-            # n1 (Max heating dots): 100 (0x64) - 太低可能無法啟動
-            # n2 (Heating time): 250 (0xFA) - 保持最大濃度
-            # n3 (Heating interval): 5 (0x05) - 標準間隔
-            self._write_bytes(b'\x1B\x37\x64\xFA\x05') 
-            time.sleep(0.1)
+            # --- Set High Darkness for Image (Temporarily Disabled) ---
+            # self._write_bytes(b'\x1B\x37\x64\xFA\x05') 
+            # time.sleep(0.1)
             # -----------------------------------
             
             # --- Image Processing ---
@@ -249,9 +236,9 @@ class PrinterManager:
                     ser.write(b'\x1B\x40')
                     time.sleep(0.1)
                     
-                    # --- Set High Darkness ---
-                    ser.write(b'\x1B\x37\x07\xC8\x02')
-                    time.sleep(0.1)
+                    # --- Set High Darkness (Temporarily Disabled) ---
+                    # ser.write(b'\x1B\x37\x07\xC8\x02')
+                    # time.sleep(0.1)
                     # -------------------------
                     
                     # Formatting commands
