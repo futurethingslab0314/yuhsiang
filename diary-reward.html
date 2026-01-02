@@ -294,7 +294,7 @@
             height: 100%;
             box-sizing: border-box;
             /* 動畫由 JS 動態控制強度，或使用 CSS 預設 */
-            transition: width 0.1s, height 0.1s, opacity 0.1s;
+            transition: transform 0.8s ease-out, opacity 0.8s ease-out;
         }
 
 
@@ -1498,8 +1498,9 @@
         }
 
         function playQuestionTransition() {
-            spawnCoins(15);
-            console.log('✨ 問題轉場動畫');
+            // 用戶要求：不要變成三分之一，維持一樣的份量
+            spawnCoins(100);
+            console.log('✨ 問題轉場動畫：給予完整獎勵');
         }
 
         async function handleQuestionComplete(transcriptText) {
@@ -1741,9 +1742,22 @@
                             if (!transcriptText) console.warn('⚠️ 未偵測到轉錄內容，將使用預設文字繼續流程');
                             const finalText = transcriptText || "(未偵測到語音)";
 
+                            // 縮短延遲至 2 秒，確保用戶感覺流暢
                             setTimeout(async () => {
-                                await handleQuestionComplete(finalText);
-                            }, 5500);
+                                console.log("⏳ 準備進入下一題處理流程...");
+                                try {
+                                    // 重要：重置狀態為 IDLE，確保按鈕和新流程可以正常運作
+                                    AppState.currentState = SystemState.IDLE;
+                                    updateDebugInfo();
+
+                                    await handleQuestionComplete(finalText);
+                                } catch (err) {
+                                    console.error("❌ 下一題處理失敗:", err);
+                                    // 強制重置以防卡死
+                                    QuestionState.isInProgress = false;
+                                    hideGuideMessage();
+                                }
+                            }, 2000);
                         }
                     } catch (error) {
                         console.error('❌ 儲存日記失敗:', error);
