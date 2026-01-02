@@ -613,6 +613,12 @@ class WakeUpMapWebApp:
                     # 檢查程式是否停止
                     if hasattr(self, '_stop_event') and self._stop_event.is_set():
                         break
+                    
+                    # Heartbeat Debug Log (每10秒印一次)
+                    # Use a counter variable outside loop if possible, but here we just use random chance or check time
+                    # Simple way: just log "Web Monitor Active" once at start (already done)
+                    # Let's verify logs are working
+                    # self.logger.debug("Checking frontend logs...")
 
                     # 使用 JavaScript 直接獲取內容 (更穩定)
                     try:
