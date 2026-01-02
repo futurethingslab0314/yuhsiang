@@ -173,13 +173,18 @@ class PrinterManager:
                     # Send command header
                     ser.write(cmd)
                     # Send image data
-                    # Break into chunks to avoid buffer overflow if needed, but GS v 0 usually handles stream
-                    # Let's write in chunks of 1KB just in case
-                    CHUNK_SIZE = 1024
+                    # Optimized flow control for 19200 baud
+                    # 19200 baud ~= 1.9 KB/s. To be safe, we send small chunks with delays.
+                    CHUNK_SIZE = 32 # Reduced from 1024 to 32 bytes
+                    
+                    total_bytes = len(data)
+                    self.logger.info(f"Printing image ({total_bytes} bytes) with flow control...")
+                    
                     for i in range(0, len(data), CHUNK_SIZE):
                         ser.write(data[i:i+CHUNK_SIZE])
-                        # 增加延遲，讓印表機有時間「慢慢印」
-                        time.sleep(0.03) # 微調延遲
+                        # Wait time > transmission time (0.016s) + processing buffer
+                        time.sleep(0.05) 
+
                     
                     # Feed paper after image
                     ser.write(b'\n\n\n')

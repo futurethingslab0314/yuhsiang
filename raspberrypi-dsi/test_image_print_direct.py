@@ -54,6 +54,9 @@ def test_print_image(url):
             cmd = header + bytes([xL, xH, yL, yH])
             ser.write(cmd)
             
+            # Get image data
+            data = img.tobytes()
+            
             # Split into small chunks to prevent buffer overflow at 19200 baud
             # 19200 baud ~= 1920 bytes/sec. 
             # Safe chunk size: 32 bytes (takes ~0.016s to transmit, we sleep longer to be safe)
