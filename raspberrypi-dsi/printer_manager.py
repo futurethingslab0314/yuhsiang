@@ -9,14 +9,20 @@ class PrinterManager:
     def __init__(self, port: str = '/dev/serial0', baudrate: int = 19200):
         """
         Initialize the thermal printer manager.
-        """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.port = port
         self.baudrate = baudrate
         self.lock = threading.Lock()
         self._connection_check()
-    
-    # ... (connection check omitted) ...
+
+    def _connection_check(self):
+        """Check if we can open the serial port"""
+        try:
+            with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
+                pass
+            self.logger.info(f"Printer connection check to {self.port} successful.")
+        except serial.SerialException as e:
+            self.logger.warning(f"Printer connection check failed: {e}. Printer might not work.")
 
     def print_text(self, text: str):
         """Print simple text to the thermal printer"""
