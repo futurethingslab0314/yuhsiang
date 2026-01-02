@@ -54,12 +54,27 @@ def test_print_image(url):
             cmd = header + bytes([xL, xH, yL, yH])
             ser.write(cmd)
             
-            data = img.tobytes()
-            CHUNK_SIZE = 1024
+            # Split into small chunks to prevent buffer overflow at 19200 baud
+            # 19200 baud ~= 1920 bytes/sec. 
+            # Safe chunk size: 32 bytes (takes ~0.016s to transmit, we sleep longer to be safe)
+            CHUNK_SIZE = 32
+            
+            # Print total size for reference
+            total_bytes = len(data)
+            print(f"Total image bytes: {total_bytes}")
+            
             for i in range(0, len(data), CHUNK_SIZE):
-                ser.write(data[i:i+CHUNK_SIZE])
-                time.sleep(0.05)
-                print(f"Sent chunk {i}/{len(data)}", end='\r')
+                chunk = data[i:i+CHUNK_SIZE]
+                ser.write(chunk)
+                
+                # Dynamic delay: wait slightly longer than transmission time
+                # + extra buffer for printer processing
+                time.sleep(0.05) 
+                
+                # Progress indicator
+                percent = (i + len(chunk)) / total_bytes * 100
+                print(f"Printing... {percent:.1f}%", end='\r')
+
             
             print("\nFeeding paper...")
             ser.write(b'\n\n\n')
