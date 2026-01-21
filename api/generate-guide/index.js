@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { userId = 'default-user', date, daysToAnalyze = 7, language = 'zh-TW' } = req.body || {};
+        const { userId = 'default-user', date, daysToAnalyze = 7, language = 'zh-TW', questionNumber = 1, previousAnswer = '' } = req.body || {};
 
         // 檢查 OpenAI API Key
         if (!process.env.OPENAI_API_KEY) {
@@ -72,8 +72,9 @@ export default async function handler(req, res) {
         const targetLang = isEnglish ? 'English' : 'Traditional Chinese';
         const charLimit = isEnglish ? '15-40 words' : '25 個字以內';
 
-        // 讀取使用者最近 N 天的日記內容
+        // 讀取使用者最近 N 天的日記內容 (僅對第一題有用，作為背景資訊)
         let recentDiaries = [];
+        // 只有第一題需要讀取歷史日記增加豐富度，或者保持每次都讀取作為背景 tone check
         if (db) {
             try {
                 const diariesSnapshot = await db
@@ -118,16 +119,26 @@ export default async function handler(req, res) {
         const prompt = getGuidePrompt({
             targetLang,
             charLimit,
-            userContext
+            userContext,
+            questionNumber,
+            previousAnswer
         });
 
+        // 第一題需要較高的創造力 (1.1)，後續追問則維持穩定 (0.7)
+        const temperature = parseInt(questionNumber) === 1 ? 1.1 : 0.7;
+
+        // 所有題目皆已在 Prompt 中定義 Persona (DiaryContainer)，故使用 minimal system prompt 以避免干擾
+        const systemContent = (parseInt(questionNumber) >= 1 && parseInt(questionNumber) <= 3)
+            ? `你是一個輔助引導的 AI。請完全依照使用者的指令與角色設定生成回應。請使用 ${targetLang}。`
+            : `你是一位深具同理心、溫暖且不過度熱情的心理陪伴專家。你的載體是一個放在家中的互動裝置，你的用戶是正在經歷憂鬱症狀的人。今天是晚間時刻。請使用 ${targetLang} 回應。`;
+
         const completion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: [
-                { role: 'system', content: `你是一位深具同理心、溫暖且不過度熱情的心理陪伴專家。你的載體是一個放在家中的互動裝置，你的用戶是正在經歷憂鬱症狀的人。今天是晚間時刻。請使用 ${targetLang} 回應。` },
+                { role: 'system', content: systemContent },
                 { role: 'user', content: prompt }
             ],
-            temperature: 0.7,
+            temperature: temperature,
             max_tokens: 150
         });
 
