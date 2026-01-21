@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             userId = 'default-user',
             totalCoins = 0,
             date = new Date().toISOString().slice(0, 10),
-            daysToAnalyze = 10,
+            daysToAnalyze = 7,  // Default to 7 days as requested
             language = 'zh-TW'
         } = req.body || {};
 
@@ -49,80 +49,62 @@ export default async function handler(req, res) {
             apiKey: process.env.OPENAI_API_KEY
         });
 
-        // 根據語言設定 Prompt 參數
-        const isEnglish = language === 'en-US';
-        const targetLang = isEnglish ? 'English' : 'Traditional Chinese';
-        const charLimit = isEnglish ? '32 alphanumeric characters' : '16 個全形中文字符';
-
         // 讀取使用者最近的日記內容和統計數據
         let recentDiaries = [];
         let userStats = {};
 
-        try {
-            // 讀取最近的日記
-            const diariesSnapshot = await db
-                .collection('users')
-                .doc(userId)
-                .collection('diaries')
-                .orderBy('date', 'desc')
-                .limit(daysToAnalyze)
-                .get();
+        // 讀取最近的日記
+        const diariesSnapshot = await db
+            .collection('users')
+            .doc(userId)
+            .collection('diaries')
+            .orderBy('date', 'desc')
+            .limit(daysToAnalyze)
+            .get();
 
-            recentDiaries = diariesSnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    date: data.dateString || data.date?.toDate?.()?.toISOString?.()?.slice(0, 10) || '',
-                    content: data.content?.slice(0, 150) || ''
-                };
-            });
+        // Ensure we have correct chronological order (Oldest -> Recent) for the analysis logic
+        recentDiaries = diariesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                date: data.dateString || data.date?.toDate?.()?.toISOString?.()?.slice(0, 10) || '',
+                content: data.content?.slice(0, 150) || ''
+            };
+        }).reverse(); // API returns descending, we need ascending (Oldest to Newest) based on instructions
 
-            // 讀取使用者統計
-            const userDoc = await db.collection('users').doc(userId).get();
-            if (userDoc.exists) {
-                userStats = userDoc.data();
-            }
-
-            console.log(`📖 讀取到 ${recentDiaries.length} 筆最近日記`);
-            console.log(`📊 使用者統計: 總金幣 ${userStats.totalCoins || 0}, 總日記 ${userStats.totalDiaries || 0}`);
-        } catch (error) {
-            console.log('⚠️ 無法讀取歷史資料，將使用預設鼓勵語:', error.message);
+        // 讀取使用者統計
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            userStats = userDoc.data();
         }
+
+        console.log(`📖 讀取到 ${recentDiaries.length} 筆最近日記`);
+
 
         // 組合 prompt
         let userHistorySummary = '';
-        let emotionalKeywords = isEnglish ? 'Calm, Effort, Persistence' : '平靜、努力、堅持'; // 預設關鍵字
 
         if (recentDiaries.length > 0) {
             const summaries = recentDiaries
-                .map((entry, idx) => `${idx + 1}. ${entry.date}: ${entry.content.slice(0, 100)}...`)
+                .map((entry, idx) => `Day ${idx + 1} (${entry.date}): ${entry.content.slice(0, 150)}...`)
                 .join('\n');
 
             userHistorySummary = summaries;
-
-            // 簡單從日記內容提取關鍵字（這裡僅作示例，實際可使用更複雜的邏輯或讓 GPT 分析）
-            // 在這裡我們讓 GPT 在 prompt 內自行分析情緒，因此變數作為上下文提供
         } else {
-            userHistorySummary = isEnglish
-                ? '(No recent diary records, but the user has continuously accumulated effort)'
-                : '（無近期日記記錄，但使用者已持續累積努力）';
-            emotionalKeywords = isEnglish
-                ? 'Tired, Need Rest, Worthy of Being Seen'
-                : '疲憊、需要休息、值得被看見';
+            // Fallback if no diaries found
+            userHistorySummary = 'No recent diary records found. Assume a journey from emptiness to a small beginning.';
         }
 
-        // 根據語言設定 Prompt 參數
-        // 組合 prompt 生成圖像描述
+        // 載入 Prompt Config
         const { getPrintPrompt } = await import('../../api/config/prompts.js');
         const promptGenPrompt = getPrintPrompt({
-            targetLang,
-            userHistorySummary,
-            emotionalKeywords
+            targetLang: language === 'en-US' ? 'English' : 'Traditional Chinese',
+            userHistorySummary
         });
 
-        // 第一步：使用 GPT-4/3.5 生成 DALL-E 的 Prompt
+        // 第一步：使用 GPT-4o 生成 DALL-E 的 Prompt (需要較強的邏輯推理)
         console.log('🎨 正在生成圖像描述...');
         const promptCompletion = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: [
                 { role: 'system', content: "You are a creative director describing scenes for an AI image generator." },
                 { role: 'user', content: promptGenPrompt }
@@ -178,11 +160,9 @@ export default async function handler(req, res) {
             basedOnDiaries: recentDiaries.length,
             totalCoins: userStats.totalCoins || totalCoins
         });
+
     } catch (error) {
         console.error('生成列印內容時發生錯誤:', error);
         res.status(500).json({ error: error.message });
     }
 }
-
-
-

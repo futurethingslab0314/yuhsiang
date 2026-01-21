@@ -180,8 +180,8 @@ class PrinterManager:
                         time.sleep(0.05) 
 
                     
-                    # Feed paper after image
-                    ser.write(b'\n\n\n')
+                    # Feed paper after image (Increased feed for case clearance)
+                    ser.write(b'\n' * 10)
             
             self.logger.info("Image print command sent.")
             return True
@@ -276,7 +276,7 @@ class PrinterManager:
                     # Footer
                     ser.write(b'Date: ' + date_str.encode('utf-8') + b'\n')
                     ser.write(b'Keep this ticket to redeem.\n')
-                    ser.write(b'\n\n\n') # Feed
+                    ser.write(b'\n' * 10) # Increased feed for case clearance
                     
             except Exception as e:
                 self.logger.error(f"Failed to print reward ticket: {e}")

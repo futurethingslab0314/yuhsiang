@@ -213,10 +213,10 @@ class WakeUpMapWebApp:
             # 🔥 啟動前端日誌監控 (修復：之前漏掉了這個呼叫)
             self._start_frontend_log_monitoring()
 
-            # 🖨️ 啟動時發送測試列印，確認印表機子系統正常
+            # 🖨️ 啟動時發送測試列印 (已停用)
             if self.printer_manager:
-                self.logger.info("🖨️ 正在執行啟動測試列印...")
-                threading.Thread(target=self.printer_manager.print_text, args=("System Ready\nPrinter Online",)).start()
+                self.logger.info("🖨️ 印表機管理器已就緒 (省略啟動測試列印)")
+                # threading.Thread(target=self.printer_manager.print_text, args=("System Ready\nPrinter Online",)).start()
 
             
         except Exception as e:
