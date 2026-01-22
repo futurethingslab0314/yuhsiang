@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import admin from 'firebase-admin';
+import sharp from 'sharp';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
@@ -16,6 +17,68 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+
+/**
+ * 根據品質分數計算像素化程度
+ * @param {number} avgQuality - 平均品質分數 (1-4)
+ * @returns {number} - 像素格子大小（1 = 原圖，數字越大像素越粗）
+ */
+function getPixelSize(avgQuality) {
+    // 4.0 滿分 = 原圖不處理
+    if (avgQuality >= 4.0) return 1;
+    // 3.0 - 3.9 = 細緻像素 (4x4)
+    if (avgQuality >= 3.0) return 4;
+    // 2.0 - 2.9 = 中等像素 (8x8)
+    if (avgQuality >= 2.0) return 8;
+    // 1.0 - 1.9 = 粗略像素 (16x16)，但仍可辨識
+    return 16;
+}
+
+/**
+ * 對圖片進行像素化處理
+ * @param {Buffer} imageBuffer - 原始圖片 buffer
+ * @param {number} pixelSize - 像素格子大小
+ * @returns {Promise<Buffer>} - 處理後的圖片 buffer
+ */
+async function pixelateImage(imageBuffer, pixelSize) {
+    if (pixelSize <= 1) {
+        // 不需要像素化，直接返回原圖
+        return imageBuffer;
+    }
+
+    // 獲取原始尺寸
+    const metadata = await sharp(imageBuffer).metadata();
+    const { width, height } = metadata;
+
+    // 縮小再放大實現像素化效果
+    const smallWidth = Math.max(1, Math.round(width / pixelSize));
+    const smallHeight = Math.max(1, Math.round(height / pixelSize));
+
+    console.log(`🎨 像素化處理: ${width}x${height} -> ${smallWidth}x${smallHeight} -> ${width}x${height} (pixelSize=${pixelSize})`);
+
+    const pixelatedBuffer = await sharp(imageBuffer)
+        // 先縮小
+        .resize(smallWidth, smallHeight, { 
+            kernel: sharp.kernel.nearest,
+            fit: 'fill'
+        })
+        // 再放大回原尺寸
+        .resize(width, height, { 
+            kernel: sharp.kernel.nearest,
+            fit: 'fill'
+        })
+        .toBuffer();
+
+    return pixelatedBuffer;
+}
+
+/**
+ * 將圖片 Buffer 轉為 Base64 Data URL
+ */
+function bufferToDataUrl(buffer, mimeType = 'image/png') {
+    const base64 = buffer.toString('base64');
+    return `data:${mimeType};base64,${base64}`;
+}
 
 export default async function handler(req, res) {
     // 設置 CORS 標頭
@@ -67,9 +130,18 @@ export default async function handler(req, res) {
             const data = doc.data();
             return {
                 date: data.dateString || data.date?.toDate?.()?.toISOString?.()?.slice(0, 10) || '',
-                content: data.content?.slice(0, 150) || ''
+                content: data.content?.slice(0, 150) || '',
+                qualityScore: data.qualityScore || 2.5  // 預設中間分數
             };
         }).reverse(); // API returns descending, we need ascending (Oldest to Newest) based on instructions
+
+        // 計算最近 7 天日記的平均品質分數
+        let avgQualityScore = 2.5; // 預設值
+        if (recentDiaries.length > 0) {
+            const totalQuality = recentDiaries.reduce((sum, d) => sum + (d.qualityScore || 2.5), 0);
+            avgQualityScore = totalQuality / recentDiaries.length;
+        }
+        console.log(`📊 平均品質分數: ${avgQualityScore.toFixed(2)} (基於 ${recentDiaries.length} 筆日記)`);
 
         // 讀取使用者統計
         const userDoc = await db.collection('users').doc(userId).get();
@@ -130,8 +202,45 @@ export default async function handler(req, res) {
             response_format: "url"
         });
 
-        const imageUrl = imageResponse.data[0].url;
-        console.log(`✅ 圖像生成成功: ${imageUrl ? imageUrl.slice(0, 50) + '...' : 'Unknown URL'}`);
+        const originalImageUrl = imageResponse.data[0].url;
+        console.log(`✅ 圖像生成成功: ${originalImageUrl ? originalImageUrl.slice(0, 50) + '...' : 'Unknown URL'}`);
+
+        // 第三步：根據品質分數進行像素化處理
+        const pixelSize = getPixelSize(avgQualityScore);
+        console.log(`🎮 解析度等級: pixelSize=${pixelSize} (品質分數=${avgQualityScore.toFixed(2)})`);
+
+        let finalImageUrl = originalImageUrl;
+        let finalImageDataUrl = null;
+
+        // 如果需要像素化處理
+        if (pixelSize > 1) {
+            try {
+                console.log('🔲 開始像素化處理...');
+                
+                // 下載原始圖片
+                const imageRes = await fetch(originalImageUrl);
+                if (!imageRes.ok) {
+                    throw new Error(`下載圖片失敗: ${imageRes.status}`);
+                }
+                const originalBuffer = Buffer.from(await imageRes.arrayBuffer());
+                
+                // 進行像素化處理
+                const pixelatedBuffer = await pixelateImage(originalBuffer, pixelSize);
+                
+                // 轉為 PNG 格式的 Data URL
+                const pngBuffer = await sharp(pixelatedBuffer).png().toBuffer();
+                finalImageDataUrl = bufferToDataUrl(pngBuffer, 'image/png');
+                
+                console.log(`✅ 像素化處理完成，輸出大小: ${pngBuffer.length} bytes`);
+                
+                // 像素化後使用 Data URL
+                finalImageUrl = finalImageDataUrl;
+            } catch (pixelError) {
+                console.error('⚠️ 像素化處理失敗，使用原圖:', pixelError.message);
+                // 失敗時使用原圖
+                finalImageUrl = originalImageUrl;
+            }
+        }
 
         // 記錄列印歷史
         try {
@@ -142,7 +251,10 @@ export default async function handler(req, res) {
                 .add({
                     type: 'image',
                     imagePrompt,
-                    imageUrl,
+                    originalImageUrl,  // 保留原圖 URL
+                    imageUrl: finalImageUrl.startsWith('data:') ? '[Base64 Data]' : finalImageUrl,
+                    pixelSize,
+                    avgQualityScore: parseFloat(avgQualityScore.toFixed(2)),
                     coinsAtPrint: totalCoins,
                     diariesAnalyzed: recentDiaries.length,
                     generatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -154,8 +266,11 @@ export default async function handler(req, res) {
         }
 
         res.status(200).json({
-            imageUrl,
+            imageUrl: finalImageUrl,
+            originalImageUrl,  // 同時提供原圖 URL 供參考
             imagePrompt,
+            pixelSize,
+            avgQualityScore: parseFloat(avgQualityScore.toFixed(2)),
             printText: "[Image Generated]", // 為了兼容前端舊有 checks
             basedOnDiaries: recentDiaries.length,
             totalCoins: userStats.totalCoins || totalCoins
