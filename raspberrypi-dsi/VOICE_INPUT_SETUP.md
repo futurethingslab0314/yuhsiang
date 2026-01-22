@@ -130,3 +130,4 @@ def on_mic_button_pressed():
 
 完成以上步驟後，就能透過樹莓派硬體按鈕或 CLI 指令，將語音內容自動轉寫成文字並同步到 Firebase 🎉。
 
+
