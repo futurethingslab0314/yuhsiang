@@ -2118,6 +2118,8 @@
                 text: "恭喜獲得金幣獎勵！\n(網路連線不可用，使用離線憑證)",
                 coins: AppState.totalCoins,
                 imageUrl: null,
+                pixelSize: 1,  // 預設原圖
+                avgQualityScore: 2.5,
                 coupon: "OFFLINE-" + Date.now().toString().slice(-4)
             };
 
@@ -2133,7 +2135,7 @@
                         userId: 'default-user',
                         totalCoins: AppState.totalCoins,
                         date: new Date().toISOString().slice(0, 10),
-                        daysToAnalyze: 10,
+                        daysToAnalyze: 7,
                         language: AppState.language,
                         qualityScore: qualityScore,
                         answerLengths: answerLengths
@@ -2143,11 +2145,14 @@
                 if (resp.ok) {
                     const data = await resp.json();
                     console.log(`📄 API生成成功:`, data);
+                    console.log(`🎮 解析度: pixelSize=${data.pixelSize}, 平均品質=${data.avgQualityScore}`);
 
                     // 更新為 API 資料
                     printData.text = (data.printText || '').trim();
                     printData.coins = data.totalCoins || AppState.totalCoins;
                     printData.imageUrl = data.imageUrl;
+                    printData.pixelSize = data.pixelSize || 1;  // 像素化程度
+                    printData.avgQualityScore = data.avgQualityScore || 2.5;
                     printData.coupon = "COIN-" + printData.coins;
                 } else {
                     console.warn('⚠️ API 請求失敗，將使用備用內容');
@@ -2169,6 +2174,8 @@
                             reward_name: printData.text ? printData.text.substring(0, 20) + "..." : "金幣獎勵",
                             coupon_code: printData.coupon,
                             imageUrl: printData.imageUrl,
+                            pixelSize: printData.pixelSize,  // 傳遞給樹莓派進行像素化
+                            avgQualityScore: printData.avgQualityScore,
                             date: new Date().toLocaleString()
                         }
                     });

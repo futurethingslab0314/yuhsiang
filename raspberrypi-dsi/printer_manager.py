@@ -59,25 +59,54 @@ class PrinterManager:
                 self.logger.error(f"Failed to print text: {e}")
 
     
-    def print_image_from_url(self, url: str):
+    def print_image_from_url(self, url: str, pixel_size: int = 1):
         """
-        Download and print an image from a URL.
+        Download and print an image from a URL or Base64 Data URL.
         Resizes and converts to 1-bit black and white for thermal printing.
+        
+        Args:
+            url: Image URL (HTTP or Base64 Data URL)
+            pixel_size: Pixelation level (1=original, 4/8/16=pixelated)
         """
-        self.logger.info(f"Downloading image from {url}...")
         try:
             import requests
+            import base64
             from PIL import Image
             from io import BytesIO
             
-            response = requests.get(url, timeout=10)
-            if response.status_code != 200:
-                self.logger.error(f"Failed to download image: status {response.status_code}")
-                return False
-
-
-            # Open image
-            img = Image.open(BytesIO(response.content))
+            # 檢查是否為 Base64 Data URL
+            if url.startswith('data:'):
+                self.logger.info("Processing Base64 Data URL image...")
+                # 解析 Data URL: data:image/png;base64,XXXXXX
+                try:
+                    # 分離 header 和 data
+                    header, encoded = url.split(',', 1)
+                    image_data = base64.b64decode(encoded)
+                    img = Image.open(BytesIO(image_data))
+                    self.logger.info(f"Base64 image decoded: {img.size}")
+                except Exception as e:
+                    self.logger.error(f"Failed to decode Base64 image: {e}")
+                    return False
+            else:
+                # 一般 HTTP URL
+                self.logger.info(f"Downloading image from {url}...")
+                response = requests.get(url, timeout=30)
+                if response.status_code != 200:
+                    self.logger.error(f"Failed to download image: status {response.status_code}")
+                    return False
+                img = Image.open(BytesIO(response.content))
+            
+            # 像素化處理（根據用心程度）
+            if pixel_size > 1:
+                self.logger.info(f"Applying pixelation filter: pixel_size={pixel_size}")
+                orig_width, orig_height = img.size
+                # 縮小
+                small_width = max(1, orig_width // pixel_size)
+                small_height = max(1, orig_height // pixel_size)
+                img = img.resize((small_width, small_height), Image.Resampling.NEAREST)
+                # 放大回原尺寸
+                img = img.resize((orig_width, orig_height), Image.Resampling.NEAREST)
+                self.logger.info(f"Pixelation applied: {orig_width}x{orig_height} -> {small_width}x{small_height} -> {orig_width}x{orig_height}")
             
             # Reset printer
             self._write_bytes(b'\x1B\x40')
@@ -210,9 +239,13 @@ class PrinterManager:
         """
         # Check if we have an image URL
         image_url = data.get('imageUrl') or data.get('image_url')
+        # 獲取像素化參數（用心程度對應的解析度）
+        pixel_size = data.get('pixelSize') or data.get('pixel_size') or 1
+        
         if image_url:
             try:
-                if self.print_image_from_url(image_url):
+                self.logger.info(f"Printing image with pixel_size={pixel_size}")
+                if self.print_image_from_url(image_url, pixel_size=int(pixel_size)):
                     return  # Success, we are done
                 else:
                     self.logger.warning(f"Image print returned False for URL {image_url}. Falling back.")

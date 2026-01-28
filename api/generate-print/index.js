@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import admin from 'firebase-admin';
-import sharp from 'sharp';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
@@ -32,52 +31,6 @@ function getPixelSize(avgQuality) {
     if (avgQuality >= 2.0) return 8;
     // 1.0 - 1.9 = 粗略像素 (16x16)，但仍可辨識
     return 16;
-}
-
-/**
- * 對圖片進行像素化處理
- * @param {Buffer} imageBuffer - 原始圖片 buffer
- * @param {number} pixelSize - 像素格子大小
- * @returns {Promise<Buffer>} - 處理後的圖片 buffer
- */
-async function pixelateImage(imageBuffer, pixelSize) {
-    if (pixelSize <= 1) {
-        // 不需要像素化，直接返回原圖
-        return imageBuffer;
-    }
-
-    // 獲取原始尺寸
-    const metadata = await sharp(imageBuffer).metadata();
-    const { width, height } = metadata;
-
-    // 縮小再放大實現像素化效果
-    const smallWidth = Math.max(1, Math.round(width / pixelSize));
-    const smallHeight = Math.max(1, Math.round(height / pixelSize));
-
-    console.log(`🎨 像素化處理: ${width}x${height} -> ${smallWidth}x${smallHeight} -> ${width}x${height} (pixelSize=${pixelSize})`);
-
-    const pixelatedBuffer = await sharp(imageBuffer)
-        // 先縮小
-        .resize(smallWidth, smallHeight, { 
-            kernel: sharp.kernel.nearest,
-            fit: 'fill'
-        })
-        // 再放大回原尺寸
-        .resize(width, height, { 
-            kernel: sharp.kernel.nearest,
-            fit: 'fill'
-        })
-        .toBuffer();
-
-    return pixelatedBuffer;
-}
-
-/**
- * 將圖片 Buffer 轉為 Base64 Data URL
- */
-function bufferToDataUrl(buffer, mimeType = 'image/png') {
-    const base64 = buffer.toString('base64');
-    return `data:${mimeType};base64,${base64}`;
 }
 
 export default async function handler(req, res) {
@@ -205,42 +158,9 @@ export default async function handler(req, res) {
         const originalImageUrl = imageResponse.data[0].url;
         console.log(`✅ 圖像生成成功: ${originalImageUrl ? originalImageUrl.slice(0, 50) + '...' : 'Unknown URL'}`);
 
-        // 第三步：根據品質分數進行像素化處理
+        // 第三步：計算像素化程度（由樹莓派端執行實際處理）
         const pixelSize = getPixelSize(avgQualityScore);
         console.log(`🎮 解析度等級: pixelSize=${pixelSize} (品質分數=${avgQualityScore.toFixed(2)})`);
-
-        let finalImageUrl = originalImageUrl;
-        let finalImageDataUrl = null;
-
-        // 如果需要像素化處理
-        if (pixelSize > 1) {
-            try {
-                console.log('🔲 開始像素化處理...');
-                
-                // 下載原始圖片
-                const imageRes = await fetch(originalImageUrl);
-                if (!imageRes.ok) {
-                    throw new Error(`下載圖片失敗: ${imageRes.status}`);
-                }
-                const originalBuffer = Buffer.from(await imageRes.arrayBuffer());
-                
-                // 進行像素化處理
-                const pixelatedBuffer = await pixelateImage(originalBuffer, pixelSize);
-                
-                // 轉為 PNG 格式的 Data URL
-                const pngBuffer = await sharp(pixelatedBuffer).png().toBuffer();
-                finalImageDataUrl = bufferToDataUrl(pngBuffer, 'image/png');
-                
-                console.log(`✅ 像素化處理完成，輸出大小: ${pngBuffer.length} bytes`);
-                
-                // 像素化後使用 Data URL
-                finalImageUrl = finalImageDataUrl;
-            } catch (pixelError) {
-                console.error('⚠️ 像素化處理失敗，使用原圖:', pixelError.message);
-                // 失敗時使用原圖
-                finalImageUrl = originalImageUrl;
-            }
-        }
 
         // 記錄列印歷史
         try {
@@ -251,8 +171,7 @@ export default async function handler(req, res) {
                 .add({
                     type: 'image',
                     imagePrompt,
-                    originalImageUrl,  // 保留原圖 URL
-                    imageUrl: finalImageUrl.startsWith('data:') ? '[Base64 Data]' : finalImageUrl,
+                    imageUrl: originalImageUrl,
                     pixelSize,
                     avgQualityScore: parseFloat(avgQualityScore.toFixed(2)),
                     coinsAtPrint: totalCoins,
@@ -265,11 +184,11 @@ export default async function handler(req, res) {
             console.log('⚠️ 無法儲存列印記錄:', error.message);
         }
 
+        // 返回原圖 URL 和 pixelSize，由樹莓派端進行像素化處理
         res.status(200).json({
-            imageUrl: finalImageUrl,
-            originalImageUrl,  // 同時提供原圖 URL 供參考
+            imageUrl: originalImageUrl,
             imagePrompt,
-            pixelSize,
+            pixelSize,  // 樹莓派端根據此參數進行像素化
             avgQualityScore: parseFloat(avgQualityScore.toFixed(2)),
             printText: "[Image Generated]", // 為了兼容前端舊有 checks
             basedOnDiaries: recentDiaries.length,
