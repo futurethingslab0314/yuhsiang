@@ -210,7 +210,8 @@ class PrinterManager:
 
                     
                     # Feed paper after image (Increased feed for case clearance)
-                    ser.write(b'\n' * 10)
+                    # 約 15-17 行 ≈ 額外 2-2.5 公分，確保照片完整露出外殼
+                    ser.write(b'\n' * 17)
             
             self.logger.info("Image print command sent.")
             return True
@@ -231,6 +232,25 @@ class PrinterManager:
                     ser.write(data)
             except Exception as e:
                 self.logger.error(f"Serial write error: {e}")
+
+    def feed_paper(self, lines: int = 3):
+        """
+        Feed paper by specified number of lines.
+        Each line is approximately 3-4mm.
+        Default 3 lines ≈ 1cm.
+        """
+        self.logger.info(f"📜 送紙: {lines} 行（約 {lines * 3}mm）")
+        with self.lock:
+            try:
+                with serial.Serial(
+                    port=self.port,
+                    baudrate=self.baudrate,
+                    timeout=1
+                ) as ser:
+                    ser.write(b'\n' * lines)
+                self.logger.info("✅ 送紙完成")
+            except Exception as e:
+                self.logger.error(f"送紙失敗: {e}")
 
     def print_reward_ticket(self, data: Dict[str, Any]):
         """

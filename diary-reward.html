@@ -2359,6 +2359,7 @@
 ║ resetGuideToday()- 清除今日已顯示記錄          ║
 ║ enterFullscreen()- 進入全螢幕模式              ║
 ║ exitFullscreen() - 退出全螢幕模式              ║
+║ feedPaper(n)     - 列印機多送 n 行紙（預設3）  ║
 ╚════════════════════════════════════════════════╝
                 `);
             };
@@ -2489,6 +2490,30 @@
                     document.mozCancelFullScreen();
                 } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
+                }
+            };
+
+            // 列印機送紙指令（約 1 公分）
+            window.feedPaper = function (lines = 3) {
+                try {
+                    const bridge = document.getElementById('frontend-log-bridge');
+                    if (bridge) {
+                        console.log(`📜 送紙指令：${lines} 行（約 ${lines * 3}mm）`);
+                        const bridgeData = JSON.stringify({
+                            level: "INFO",
+                            message: "FEED_PAPER",
+                            data: {
+                                lines: lines
+                            }
+                        });
+                        bridge.textContent = bridgeData;
+                        bridge.setAttribute('data-timestamp', Date.now());
+                        console.log('✅ 送紙訊號已發送');
+                    } else {
+                        console.warn('⚠️ 找不到橋接元素，無法送紙');
+                    }
+                } catch (e) {
+                    console.error('❌ 送紙失敗:', e);
                 }
             };
         }

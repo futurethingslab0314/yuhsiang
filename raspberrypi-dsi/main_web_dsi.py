@@ -674,6 +674,19 @@ class WakeUpMapWebApp:
                                         ).start()
                                     else:
                                         self.logger.error("❌ PrinterManager 未初始化")
+                                
+                                # 處理送紙請求
+                                elif message == "FEED_PAPER":
+                                    lines = data.get('lines', 3)
+                                    self.logger.info(f"📜 收到送紙請求: {lines} 行")
+                                    
+                                    if self.printer_manager:
+                                        threading.Thread(
+                                            target=self.printer_manager.feed_paper,
+                                            args=(lines,)
+                                        ).start()
+                                    else:
+                                        self.logger.error("❌ PrinterManager 未初始化")
                                 else:
                                     # DEBUG: 顯示收到的其他訊息 (已關閉)
                                     pass
